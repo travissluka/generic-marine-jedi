@@ -43,12 +43,6 @@ endforeach()
 #    ARGS    testinput/increment.yml
 #    LIBS    oisst )
 
-# ecbuild_add_test(
-#   TARGET  test_oisst_model
-#   SOURCES executables/TestModel.cc
-#   ARGS    testinput/model.yml
-#   LIBS    oisst )
-
 #  ecbuild_add_test(
 #    TARGET  test_oisst_modelauxcontrol
 #    SOURCES executables/TestModelAuxControl.cc
