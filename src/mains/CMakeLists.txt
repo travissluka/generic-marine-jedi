@@ -10,10 +10,6 @@ ecbuild_add_executable( TARGET  oisst_hofx_nomodel.x
                         SOURCES HofXNoModel.cc
                         LIBS    oisst )
 
-ecbuild_add_executable( TARGET  oisst_makeobs.x
-                        SOURCES MakeObs.cc
-                        LIBS    oisst )
-
 ecbuild_add_executable( TARGET  oisst_staticbinit.x
                         SOURCES StaticBInit.cc
                         LIBS    oisst )

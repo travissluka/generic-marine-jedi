@@ -30,10 +30,15 @@ before_install:
 
 script:
 - |
-  # build/test code
-  docker exec jcsda_container bash \
-   -c 'cd /jcsda/build && ecbuild /jcsda/src/bundle && cd oisst && make -j 4'
-  docker exec jcsda_container bash \
-   -c 'cd /jcsda/build/oisst && ctest'
+  # build code
+  docker exec -it jcsda_container bash \
+   -c 'cd /jcsda/build && ecbuild /jcsda/src/bundle && cd oisst && make -j 4; exit $?' \
+   || travis_terminate 1
+
+- |
+  # test code
+  docker exec -it jcsda_container bash \
+   -c 'cd /jcsda/build/oisst && ctest --output-on-failure' \
+   || travis_terminate 1
   
 after_success: 
