@@ -25,11 +25,11 @@ endforeach()
 # TODO: uncomment all of these tests as the appropriate interfaces are implemented
 #================================================================================
 
-# ecbuild_add_test(
-#   TARGET  test_oisst_geometry
-#   SOURCES executables/TestGeometry.cc
-#   ARGS    testinput/geometry.yml
-#   LIBS    oisst )
+  ecbuild_add_test(
+    TARGET  test_oisst_geometry
+    SOURCES executables/TestGeometry.cc
+    ARGS    testinput/geometry.yml
+    LIBS    oisst )
 
 #  ecbuild_add_test(
 #    TARGET  test_oisst_state
