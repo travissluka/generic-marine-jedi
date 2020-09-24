@@ -14,13 +14,15 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
+#include "oops/base/GeneralizedDepartures.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Printable.h"
-#include "oops/base/GeneralizedDepartures.h"
+#include "oops/util/Serializable.h"
 
 // forward declarations
 namespace oops {
@@ -42,6 +44,7 @@ namespace oisst {
   // Increment class
   class Increment : public oops::GeneralizedDepartures,
                     public util::Printable,
+                    public util::Serializable,
                     private util::ObjectCounter<Increment> {
    public:
     static const std::string classname() {return "oisst::Increment";}
@@ -54,7 +57,7 @@ namespace oisst {
     Increment(const Increment &);
     ~Increment();
 
-        // Math operators
+    // Math operators
     Increment & operator =(const Increment &);
     Increment & operator-=(const Increment &);
     Increment & operator+=(const Increment &);
@@ -84,8 +87,13 @@ namespace oisst {
     void read(const eckit::Configuration &);
     void write(const eckit::Configuration &) const;
 
+    // Serialize and deserialize (not needed by our project)
+    size_t serialSize() const override { return 0; }
+    void serialize(std::vector<double> &) const override {}
+    void deserialize(const std::vector<double> &, size_t &) override {}
+
    private:
-    void print(std::ostream &) const;
+    void print(std::ostream &) const override;
 
     boost::shared_ptr<const Geometry> geom_;
     util::DateTime time_;
