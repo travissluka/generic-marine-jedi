@@ -11,6 +11,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -40,6 +41,7 @@ namespace oisst {
 
   // State class
   class State : public util::Printable,
+                public util::Serializable,
                 private util::ObjectCounter<State> {
    public:
     static const std::string classname() {return "oisst::State";}
@@ -70,6 +72,11 @@ namespace oisst {
     // other accessors
     boost::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
+
+    // Serialize and deserialize (not needed by our project)
+    size_t serialSize() const override { return 0; }
+    void serialize(std::vector<double> &) const override {}
+    void deserialize(const std::vector<double> &, size_t &) override {}
 
    private:
     void print(std::ostream &) const;
