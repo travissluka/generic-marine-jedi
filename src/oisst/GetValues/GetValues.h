@@ -12,8 +12,6 @@
 #include <ostream>
 #include <string>
 
-#include <boost/shared_ptr.hpp>
-
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 

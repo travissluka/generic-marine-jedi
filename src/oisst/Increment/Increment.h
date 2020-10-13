@@ -16,8 +16,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "oops/base/GeneralizedDepartures.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -81,7 +79,7 @@ namespace oisst {
     void dirac(const eckit::Configuration &);
 
     // other accessors
-    boost::shared_ptr<const Geometry> geometry() const { return geom_; }
+    std::shared_ptr<const Geometry> geometry() const { return geom_; }
 
     // I/O
     void read(const eckit::Configuration &);
@@ -95,7 +93,7 @@ namespace oisst {
    private:
     void print(std::ostream &) const override;
 
-    boost::shared_ptr<const Geometry> geom_;
+    std::shared_ptr<const Geometry> geom_;
     util::DateTime time_;
     oops::Variables vars_;
   };

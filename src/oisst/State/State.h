@@ -13,8 +13,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "eckit/mpi/Comm.h"
 
 #include "oops/base/Variables.h"
@@ -70,7 +68,7 @@ namespace oisst {
     util::DateTime & validTime() { return time_; }
 
     // other accessors
-    boost::shared_ptr<const Geometry> geometry() const;
+    std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
     // Serialize and deserialize (not needed by our project)
@@ -81,7 +79,7 @@ namespace oisst {
    private:
     void print(std::ostream &) const;
 
-    boost::shared_ptr<const Geometry> geom_;
+    std::shared_ptr<const Geometry> geom_;
     oops::Variables vars_;
     util::DateTime time_;
   };

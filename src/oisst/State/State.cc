@@ -108,7 +108,7 @@ namespace oisst {
 
 // ----------------------------------------------------------------------------
 
-  boost::shared_ptr<const Geometry> State::geometry() const {return geom_;}
+  std::shared_ptr<const Geometry> State::geometry() const {return geom_;}
 
 // ----------------------------------------------------------------------------
 
