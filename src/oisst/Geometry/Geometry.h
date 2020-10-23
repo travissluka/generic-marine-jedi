@@ -52,9 +52,6 @@ namespace oisst {
     atlas::functionspace::StructuredColumns* atlasFunctionSpace() const {
         return atlasFunctionSpace_.get();
     }
-    atlas::FieldSet* atlasFieldSet() const {
-      return atlasFieldSet_.get();
-    }
 
    private:
     void print(std::ostream &) const;
@@ -62,7 +59,6 @@ namespace oisst {
 
     std::unique_ptr<atlas::functionspace::StructuredColumns>
       atlasFunctionSpace_;
-    std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 

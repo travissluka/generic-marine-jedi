@@ -23,8 +23,6 @@ namespace oisst {
     atlasFunctionSpace_.reset(
       new atlas::functionspace::StructuredColumns(atlasRllGrid,
       atlas::option::halo(0)));
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
   }
 
 // ----------------------------------------------------------------------------
@@ -33,12 +31,6 @@ namespace oisst {
     atlasFunctionSpace_.reset(new
       atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
       atlas::option::halo(0)));
-
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int ifield = 0; ifield < other.atlasFieldSet_->size(); ifield++) {
-      atlas::Field atlasField = other.atlasFieldSet_->field(ifield);
-      atlasFieldSet_->add(atlasField);
-    }
   }
 
 // ----------------------------------------------------------------------------

@@ -15,6 +15,8 @@
 
 #include "eckit/mpi/Comm.h"
 
+#include "atlas/field.h"
+
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
@@ -71,17 +73,23 @@ namespace oisst {
     std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
 
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
+      return atlasFieldSet_;
+    }
+
     // Serialize and deserialize (not needed by our project)
     size_t serialSize() const override { return 0; }
     void serialize(std::vector<double> &) const override {}
     void deserialize(const std::vector<double> &, size_t &) override {}
 
    private:
-    void print(std::ostream &) const;
+     void print(std::ostream &) const;
 
-    std::shared_ptr<const Geometry> geom_;
-    oops::Variables vars_;
-    util::DateTime time_;
+     std::shared_ptr<const Geometry> geom_;
+     oops::Variables vars_;
+     util::DateTime time_;
+
+     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 

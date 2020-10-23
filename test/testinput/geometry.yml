@@ -1,2 +1,5 @@
 geometry:
-  grid: Slat360x180
+  grid: S360x180
+  domain:
+    type: global
+    west: -180

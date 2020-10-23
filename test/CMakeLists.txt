@@ -20,22 +20,36 @@ foreach(FILENAME ${oisst_test_input})
 endforeach()
 
 
+list( APPEND oisst_test_data
+  Data/19850101_regridded_sst.nc
+  )
+
+
+# link the input files for the tests
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
+foreach(FILENAME ${oisst_test_data})
+  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
+endforeach()
+
+
 #================================================================================
 # Tests of class interfaces
 # TODO: uncomment all of these tests as the appropriate interfaces are implemented
 #================================================================================
 
-  ecbuild_add_test(
-    TARGET  test_oisst_geometry
-    SOURCES executables/TestGeometry.cc
-    ARGS    testinput/geometry.yml
-    LIBS    oisst )
+   ecbuild_add_test(
+     TARGET  test_oisst_geometry
+     SOURCES executables/TestGeometry.cc
+     ARGS    testinput/geometry.yml
+     LIBS    oisst )
 
-#  ecbuild_add_test(
-#    TARGET  test_oisst_state
-#    SOURCES executables/TestState.cc
-#    ARGS    testinput/state.yml
-#    LIBS    oisst )
+   ecbuild_add_test(
+     TARGET  test_oisst_state
+     SOURCES executables/TestState.cc
+     ARGS    testinput/state.yml
+     LIBS    oisst )
 
 #  ecbuild_add_test(
 #    TARGET  test_oisst_increment

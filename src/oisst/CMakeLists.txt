@@ -14,6 +14,8 @@ function(oisst_target_sources)
   endforeach()
 endfunction()
 
+find_package( NetCDF REQUIRED COMPONENTS CXX )
+
 # the main library for this interface
 ecbuild_add_library( TARGET   oisst
                      SOURCES  ${oisst_src_files}
