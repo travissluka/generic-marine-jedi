@@ -22,6 +22,7 @@ endforeach()
 
 list( APPEND oisst_test_data
   Data/19850101_regridded_sst.nc
+  Data/obs_sst.nc
   )
 
 
