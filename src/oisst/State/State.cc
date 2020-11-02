@@ -12,11 +12,15 @@
 #include <iostream>
 #include <iterator>
 
+#include <limits>
+#include <iomanip>
+
 // #include <netcdf>
 #include "netcdf"
 
 #include "oisst/Geometry/Geometry.h"
 #include "oisst/State/State.h"
+#include "oisst/Increment/Increment.h"
 
 #include "eckit/config/Configuration.h"
 
@@ -27,6 +31,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
+#include "oops/util/missingValues.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
@@ -49,8 +54,6 @@ namespace oisst {
                        __FILE__, __LINE__);
     }
 
-    const int SIZE = geom_->atlasFunctionSpace()->size();
-
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
@@ -66,9 +69,6 @@ namespace oisst {
     // check and read in data if it has filename
     if (conf.has("filename")) {
       read(conf);
-//    double norm1 = norm();
-//    std::cout << "State::State(), after read file, norm1=" << norm1
-//              << std::endl;
     }
   }
 
@@ -83,14 +83,11 @@ namespace oisst {
                       __FILE__, __LINE__);
     }
 
-    const int SIZE = geom_->atlasFunctionSpace()->size();
-
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
                          name(var));
-      // Initialize to 300.0, will fail the test: EXPECT(xx3.norm()==0); so 0.0
       auto fd = make_view<float, 1>(fld);
       fd.assign(0.0);
 
@@ -102,7 +99,7 @@ namespace oisst {
 
   State::State(const Geometry & geom, const State & other)
     : geom_(new Geometry(geom)), time_(other.time_), vars_(other.vars_) {
-    // Change state resolution
+    // Change state resolution, normally used for interpolation.
 
     if (vars_.size() != 1) {
       util::abor1_cpp("State::State() needs to be implemented.",
@@ -112,20 +109,19 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      // Ligang: should be copied from "other"?
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
                          name(var));
       atlasFieldSet_->add(fld);
     }
 
-    // Ligang: copy data from object other, better way to initialize?!
-    const int SIZE = geom_->atlasFunctionSpace()->size();
+    // Ligang: copy data from object other? better way to initialize?!
+    const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
       auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
       auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < SIZE; j++)
-        fd(j) = fd_other(j);
+      for (int j = 0; j < size; j++)
+        fd(j) = fd_other(j);  // Ligang: be careful with the missingvalue.
     }
   }
 
@@ -149,29 +145,34 @@ namespace oisst {
     }
 
     // Ligang: copy data from object other
-    const int SIZE = geom_->atlasFunctionSpace()->size();
+    const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
       auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
       auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
-      for (int j = 0; j < SIZE; j++)
+      for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);
     }
   }
 
 // ----------------------------------------------------------------------------
 
-  State::~State() {
-  // util::abor1_cpp("State::~State() needs to be implemented.",
-  //                __FILE__, __LINE__);
-  }
+  State::~State() {}
 
 // ----------------------------------------------------------------------------
 
-  State & State::operator+=(const Increment & dx)
-  {
-  // util::abor1_cpp("State::operator+=(Increment) needs to be implemented.",
-  //                __FILE__, __LINE__);
+  State & State::operator+=(const Increment & dx) {
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd_dx = make_view<float, 1>(dx.atlasFieldSet()->field(0));
+
+    float missing = util::missingValue(missing);
+    const int size = geom_->atlasFunctionSpace()->size();
+    for (int i = 0; i < size; i++) {
+      if (fd(i) == missing || fd_dx(i) == missing)
+        fd(i) = missing;
+      else
+        fd(i) += fd_dx(i);
+    }
 
     return *this;
   }
@@ -179,46 +180,42 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::accumul(const double &zz, const State &rhs) {
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto rhs_field_data = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
 
-    // Ligang: the following does not work, not defined operator;
-    // field_data = field_data + zz*rhs_field_data;
-    // Ligang: return size_halo_? looks not.
-    size_t SIZE = geom_->atlasFunctionSpace()->size();
+    float missing = util::missingValue(missing);
 
-    // Ligang: what about missing value?
-    for (size_t jnode = 0; jnode < SIZE; jnode++)
-      field_data(jnode) +=  zz*rhs_field_data(jnode);
+    const size_t size = geom_->atlasFunctionSpace()->size();
 
-    return;
+    for (size_t i = 0; i < size; i++) {
+      if (fd(i) == missing || fd_rhs(i) == missing)
+        fd(i) = missing;
+      else
+        fd(i) +=  zz*fd_rhs(i);
+    }
   }
 
 // ----------------------------------------------------------------------------
 
   double State::norm() const {
-    double norm = 0.0, s = 0.0;
-    int nx = 0, ny = 0;
+    const int nx = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny()),
+              ny = static_cast<int>(((atlas::RegularLonLatGrid&)
+                   (geom_->atlasFunctionSpace()->grid())).nx());
+    const int size = geom_->atlasFunctionSpace()->size();
 
-    // Ligang: just consider 1 var for now.
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-
-    ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
-    nx = static_cast<int>(
-      ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
-
-    // Ligang: they ARE the same.
-    if (geom_->atlasFunctionSpace()->size() != ny*nx)
+    // Ligang: just to check, they should be the same.
+    if (size != ny*nx)
       util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);
 
-    // Ligang: undefined operator "+" for field_data+ny*nx;
-    // s = std::inner_product(field_data, field_data+ny*nx, field_data, 0);
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    float missing = util::missingValue(missing);
+
     int nValid = 0;
-    for (int jnode = 0; jnode < ny*nx; jnode++) {
-      // Ligang: if not missing value, not a good way, need to improve!
-      if (true) {  // LC: previously (field_data(jnode) > 0.0), fail test
+    double norm = 0.0, s = 0.0;
+    for (int i = 0; i < size; i++) {
+      if (fd(i) != missing) {
         nValid += 1;
-        s += field_data(jnode)*field_data(jnode);
+        s += fd(i)*fd(i);
       }
     }
 
@@ -233,13 +230,14 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::zero() {
-    // Ligang: just consider 1 var for now
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
 
-    // atlasFieldSet_->field(0).array() = 0.0  // does not work.
-    // field_data = 0.0; // Ligang: undefined operator "="!
+    const int size = geom_->atlasFunctionSpace()->size();
+    float missing = util::missingValue(missing);
 
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-    field_data.assign(0.0);
+    for (int i = 0; i < size; i++)
+      if (fd(i) != missing)
+        fd(i) = 0.0;
   }
 
 // ----------------------------------------------------------------------------
@@ -248,8 +246,8 @@ namespace oisst {
     int iread = 0, time = 0, lon = 0, lat = 0, bc = 0;
     std::string sdate, filename, record;
 
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
-    const int SIZE = geom_->atlasFunctionSpace()->size();
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    const int size = geom_->atlasFunctionSpace()->size();
 
     // Ligang: conf only has "statefile" part of the yml file.
     // Here we do not actually use iread
@@ -291,10 +289,18 @@ namespace oisst {
     float sstData[lat][lon];
     sstVar.getVar(sstData);
 
+    const float epsilon = 1.0e-12;
+    const float missing = util::missingValue(missing);
+    const float missing_nc = -32768.0;
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++)
+        if (abs(sstData[j][i]-(missing_nc)) < epsilon)
+          sstData[j][i] = missing;
+
     int idx = 0;
-    for (int i = 0; i < lat; i++)
-      for (int j = 0; j < lon; j++)
-        field_data(idx++) = sstData[i][j];
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++)
+        fd(idx++) = sstData[j][i];
   }
 
 // ----------------------------------------------------------------------------
@@ -307,7 +313,7 @@ namespace oisst {
     if (!conf.get("filename", filename))
       util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
     else
-      std::cout << "State::write(), filename=" << filename << std::endl;
+      oops::Log::info() << "State::write(), filename=" << filename << std::endl;
 
     // create netCDF file
     netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
@@ -340,23 +346,32 @@ namespace oisst {
                                        , dims);
 
     // Ligang: define units atts for data vars
+    const float fillvalue = -32768.0;
     sstVar.putAtt("units", "K");
-    sstVar.putAtt("_FillValue", netCDF::NcFloat(), -32768.);
+    sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
+    sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
     // write data to the file
-    // Ligang: compile failed, rank should be 1, not 2, related to init?
-//  auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
-    auto field_data = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+
+    const float missing = util::missingValue(missing);
 
     float sstData[time][lat][lon];
     int idx = 0;
-    for (int i = 0; i < lat; i++)
-      for (int j = 0; j < lon; j++)
-        sstData[0][i][j] = field_data(idx++);
+    for (int j = 0; j < lat; j++)
+      for (int i = 0; i < lon; i++) {
+        if (fd(idx) == missing)
+          sstData[0][j][i] = fillvalue;
+        else
+          sstData[0][j][i] = fd(idx);
+
+        idx++;
+      }
 
     sstVar.putVar(sstData);
 
-    oops::Log::info() << "Successfully write data to file!" << std::endl;
+    oops::Log::info() << "State::write(), Successfully write data to file!"
+                      << std::endl;
   }
 
 // ----------------------------------------------------------------------------
@@ -366,8 +381,35 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::print(std::ostream & os) const {
+    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    const int size = geom_->atlasFunctionSpace()->size();
+    float missing = util::missingValue(missing);
+
+    float mean = 0.0, sum = 0.0,
+          min = std::numeric_limits<float>::max(),
+          max = std::numeric_limits<float>::min();
+    int nValid = 0;
+
+    for (int i = 0; i < size; i++)
+      if (fd(i) != missing) {
+        if (fd(i) < min) min = fd(i);
+        if (fd(i) > max) max = fd(i);
+
+        sum += fd(i);
+        nValid++;
+      }
+
+    if (nValid == 0) {
+      mean = 0.0;
+      oops::Log::debug() << "State::print(), nValid == 0!" << std::endl;
+    } else {
+      mean = sum / (1.0*nValid);
+    }
+
     os << "insert diagnostic information about state here "
-       << "(min/max/mean for each state var?)"
+       << "(min/max/mean for var sea_surface_temperature: )"
+       << std::endl;
+    os << "min = " << min << ", max = " << max << ", mean = " << mean
        << std::endl;
   }
 

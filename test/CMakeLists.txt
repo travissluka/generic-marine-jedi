@@ -51,11 +51,11 @@ endforeach()
      ARGS    testinput/state.yml
      LIBS    oisst )
 
-#  ecbuild_add_test(
-#    TARGET  test_oisst_increment
-#    SOURCES executables/TestIncrement.cc
-#    ARGS    testinput/increment.yml
-#    LIBS    oisst )
+   ecbuild_add_test(
+     TARGET  test_oisst_increment
+     SOURCES executables/TestIncrement.cc
+     ARGS    testinput/increment.yml
+     LIBS    oisst )
 
 #  ecbuild_add_test(
 #    TARGET  test_oisst_modelauxcontrol

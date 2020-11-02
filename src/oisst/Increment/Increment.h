@@ -69,6 +69,7 @@ namespace oisst {
     void schur_product_with(const Increment &);
     void zero();
     void zero(const util::DateTime &);
+    void ones();
 
     // time manipulation
     void updateTime(const util::Duration & dt) { time_ += dt; }
@@ -80,6 +81,11 @@ namespace oisst {
 
     // other accessors
     std::shared_ptr<const Geometry> geometry() const { return geom_; }
+    const oops::Variables & variables() const { return vars_; }
+
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet() const {
+      return atlasFieldSet_;
+    }
 
     // I/O
     void read(const eckit::Configuration &);
@@ -96,6 +102,8 @@ namespace oisst {
     std::shared_ptr<const Geometry> geom_;
     util::DateTime time_;
     oops::Variables vars_;
+
+    std::shared_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace oisst
 
