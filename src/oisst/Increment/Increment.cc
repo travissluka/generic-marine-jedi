@@ -50,10 +50,10 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
 
-      auto fd = make_view<float, 1>(fld);
+      auto fd = make_view<double, 1>(fld);
       fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
@@ -74,7 +74,7 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
       atlasFieldSet_->add(fld);
     }
@@ -83,8 +83,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);
     }
@@ -104,9 +104,9 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
-      auto fd = make_view<float, 1>(fld);
+      auto fd = make_view<double, 1>(fld);
       fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
@@ -116,8 +116,8 @@ namespace oisst {
       const int size = geom_->atlasFunctionSpace()->size();
 
       for (int i = 0; i < vars_.size(); i++) {
-        auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-        auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+        auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+        auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
         for (int j = 0; j < size; j++)
           fd(j) = fd_other(j);
       }
@@ -138,9 +138,9 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
-      auto fd = make_view<float, 1>(fld);
+      auto fd = make_view<double, 1>(fld);
       fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
@@ -150,8 +150,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);
     }
@@ -169,8 +169,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);
     }
@@ -184,8 +184,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) -= fd_other(j);
     }
@@ -199,8 +199,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) += fd_other(j);
     }
@@ -214,7 +214,7 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
       for (int j = 0; j < size; j++)
         fd(j) *= zz;
     }
@@ -225,8 +225,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::accumul(const double & zz, const State & xx) {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_xx = make_view<float, 1>(xx.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_xx = make_view<double, 1>(xx.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
 
@@ -242,8 +242,8 @@ namespace oisst {
   {
     ASSERT(!check || time_ == dx.validTime());
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_dx = make_view<float, 1>(dx.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_dx = make_view<double, 1>(dx.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
 
@@ -256,9 +256,9 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::diff(const State & x1, const State & x2) {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_x1 = make_view<float, 1>(x1.atlasFieldSet()->field(0));
-    auto fd_x2 = make_view<float, 1>(x2.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_x1 = make_view<double, 1>(x1.atlasFieldSet()->field(0));
+    auto fd_x2 = make_view<double, 1>(x2.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
 
@@ -271,8 +271,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   double Increment::dot_product_with(const Increment &other) const {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
     double dp = 0.0;
@@ -289,7 +289,7 @@ namespace oisst {
   double Increment::norm() const {
     double norm = 0.0, s = 0.0;
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     int nValid = 0;
@@ -312,11 +312,11 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::random() {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
-    util::NormalDistribution<float> x(size, 0, 1.0, 1);
-//  util::UniformDistribution<float> x(size, -1.0, 1.0);
+    util::NormalDistribution<double> x(size, 0, 1.0, 1);
+//  util::UniformDistribution<double> x(size, -1.0, 1.0);
 
     for (int i = 0; i < size; i++)
       fd(i) = x[i];
@@ -325,8 +325,8 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::schur_product_with(const Increment &rhs ) {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
     for (int i = 0; i < size; i++)
@@ -338,14 +338,14 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::zero() {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     fd.assign(0.0);
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::ones() {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     fd.assign(1.0);
   }
 
@@ -376,7 +376,7 @@ namespace oisst {
     for (int i = 0; i < dir_size; i++)
       ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     for (int i = 0; i < dir_size; i++) {
       int idx = ixdir[i] + iydir[i]*nx;
       fd(idx) = 1.0;
@@ -386,12 +386,12 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void Increment::print(std::ostream & os) const {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
-    float mean = 0.0, sum = 0.0,
-          min = std::numeric_limits<float>::max(),
-          max = std::numeric_limits<float>::min();
+    double mean = 0.0, sum = 0.0,
+          min = std::numeric_limits<double>::max(),
+          max = std::numeric_limits<double>::min();
 
     // Does fd here (Atlas) provide max, min, mean functions as c++ std does,
     // Since normally Increment does not have missing_values?
@@ -415,7 +415,7 @@ namespace oisst {
     int time = 0, lon = 0, lat = 0, iread = 0;
     std::string sdate, filename, record;
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     // get filename
@@ -447,7 +447,7 @@ namespace oisst {
     if (incVar.isNull())
       util::abor1_cpp("Get inc var failed.", __FILE__, __LINE__);
 
-    float incData[lat][lon];
+    double incData[lat][lon];
     incVar.getVar(incData);
 
     int idx = 0;
@@ -504,20 +504,21 @@ namespace oisst {
 
     // define data vars, will change the name later.
 
-    netCDF::NcVar incVar = file.addVar(std::string("increment"), netCDF::ncFloat
-                                       , dims);
+    netCDF::NcVar incVar = file.addVar(std::string("increment")
+                         , netCDF::ncDouble, dims);
 
     // Ligang: define units atts for data vars
     incVar.putAtt("units", "K");
-    incVar.putAtt("_FillValue", netCDF::NcFloat(), -32768.);
-    incVar.putAtt("missing_value", netCDF::NcFloat(), -32768.);
+    incVar.putAtt("_FillValue", netCDF::NcDouble(), -32768.);
+    incVar.putAtt("missing_value", netCDF::NcDouble(), -32768.);
+
 
     // write data to the file
     // Ligang: compile failed, rank should be 1, not 2, related to init?
-//  auto field_data = make_view<float, 2>(atlasFieldSet_->field(0));
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+//  auto field_data = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
 
-    float incData[time][lat][lon];
+    double incData[time][lat][lon];
     int idx = 0;
     for (int i = 0; i < lat; i++)
       for (int j = 0; j < lon; j++)

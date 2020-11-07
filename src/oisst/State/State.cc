@@ -57,19 +57,18 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
       // Initialize to 0.0 or 300.0
-      auto fd = make_view<float, 1>(fld);
+      auto fd = make_view<double, 1>(fld);
       fd.assign(300.0);  // norm is 300., 0.0 if init to 0.0;
 
       atlasFieldSet_->add(fld);
     }
 
     // check and read in data if it has filename
-    if (conf.has("filename")) {
+    if (conf.has("filename"))
       read(conf);
-    }
   }
 
 // ----------------------------------------------------------------------------
@@ -86,9 +85,9 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
-      auto fd = make_view<float, 1>(fld);
+      auto fd = make_view<double, 1>(fld);
       fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
@@ -109,7 +108,7 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
       atlasFieldSet_->add(fld);
     }
@@ -118,8 +117,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);  // Ligang: be careful with the missingvalue.
     }
@@ -139,7 +138,7 @@ namespace oisst {
     atlasFieldSet_.reset(new atlas::FieldSet());
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
-      atlas::Field fld = geom_->atlasFunctionSpace()->createField<float>(
+      atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          name(var));
       atlasFieldSet_->add(fld);
     }
@@ -148,8 +147,8 @@ namespace oisst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<float, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<float, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
         fd(j) = fd_other(j);
     }
@@ -162,10 +161,10 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   State & State::operator+=(const Increment & dx) {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_dx = make_view<float, 1>(dx.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_dx = make_view<double, 1>(dx.atlasFieldSet()->field(0));
 
-    float missing = util::missingValue(missing);
+    double missing = util::missingValue(missing);
     const int size = geom_->atlasFunctionSpace()->size();
     for (int i = 0; i < size; i++) {
       if (fd(i) == missing || fd_dx(i) == missing)
@@ -180,10 +179,10 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::accumul(const double &zz, const State &rhs) {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<float, 1>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
 
-    float missing = util::missingValue(missing);
+    double missing = util::missingValue(missing);
 
     const size_t size = geom_->atlasFunctionSpace()->size();
 
@@ -207,8 +206,8 @@ namespace oisst {
     if (size != ny*nx)
       util::abor1_cpp("State::norm() size() != ny*nx.", __FILE__, __LINE__);
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
-    float missing = util::missingValue(missing);
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    double missing = util::missingValue(missing);
 
     int nValid = 0;
     double norm = 0.0, s = 0.0;
@@ -230,10 +229,10 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::zero() {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
-    float missing = util::missingValue(missing);
+    double missing = util::missingValue(missing);
 
     for (int i = 0; i < size; i++)
       if (fd(i) != missing)
@@ -246,7 +245,7 @@ namespace oisst {
     int iread = 0, time = 0, lon = 0, lat = 0, bc = 0;
     std::string sdate, filename, record;
 
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     // Ligang: conf only has "statefile" part of the yml file.
@@ -261,6 +260,9 @@ namespace oisst {
     // get filename
     if (!conf.get("filename", filename))
       util::abor1_cpp("Get filename failed.", __FILE__, __LINE__);
+
+    std::cout << "State::read(), filename = " << filename << std::endl;
+
 
     // Ligang: open netCDF file
     netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
@@ -286,12 +288,13 @@ namespace oisst {
 
     // Ligang: do we have to use for-loop?
     // sstVar.getVar(field_data); // doesn't work this way
-    float sstData[lat][lon];
-    sstVar.getVar(sstData);
+//  double sstData[lat][lon];
+    float  sstData[lat][lon];
+    sstVar.getVar(sstData);  // if used double, read-in data would be wrong.
 
-    const float epsilon = 1.0e-12;
-    const float missing = util::missingValue(missing);
-    const float missing_nc = -32768.0;
+    const double epsilon = 1.0e-6;
+    const double missing = util::missingValue(missing);
+    const double missing_nc = -32768.0;
     for (int j = 0; j < lat; j++)
       for (int i = 0; i < lon; i++)
         if (abs(sstData[j][i]-(missing_nc)) < epsilon)
@@ -300,7 +303,7 @@ namespace oisst {
     int idx = 0;
     for (int j = 0; j < lat; j++)
       for (int i = 0; i < lon; i++)
-        fd(idx++) = sstData[j][i];
+        fd(idx++) = static_cast<double>(sstData[j][i]);  // float to double.
   }
 
 // ----------------------------------------------------------------------------
@@ -342,19 +345,23 @@ namespace oisst {
     // Ligang: define units atts for coordinate vars
 
     // define data vars
+    // if ncDouble, it'll be run-time error.
     netCDF::NcVar sstVar = file.addVar(std::string("sst"), netCDF::ncFloat
                                        , dims);
 
     // Ligang: define units atts for data vars
+    // Ligang: inside OISSTv3/JEDI, use double, read/write use float
+    //         to make it consistent with the netCDF files.
+//  const double fillvalue = -32768.0;
     const float fillvalue = -32768.0;
     sstVar.putAtt("units", "K");
     sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
     sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
     // write data to the file
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
 
-    const float missing = util::missingValue(missing);
+    const double missing = util::missingValue(missing);
 
     float sstData[time][lat][lon];
     int idx = 0;
@@ -363,7 +370,7 @@ namespace oisst {
         if (fd(idx) == missing)
           sstData[0][j][i] = fillvalue;
         else
-          sstData[0][j][i] = fd(idx);
+          sstData[0][j][i] = static_cast<float>(fd(idx));
 
         idx++;
       }
@@ -381,13 +388,13 @@ namespace oisst {
 // ----------------------------------------------------------------------------
 
   void State::print(std::ostream & os) const {
-    auto fd = make_view<float, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
-    float missing = util::missingValue(missing);
+    double missing = util::missingValue(missing);
 
-    float mean = 0.0, sum = 0.0,
-          min = std::numeric_limits<float>::max(),
-          max = std::numeric_limits<float>::min();
+    double mean = 0.0, sum = 0.0,
+           min = std::numeric_limits<double>::max(),
+           max = std::numeric_limits<double>::min();
     int nValid = 0;
 
     for (int i = 0; i < size; i++)
