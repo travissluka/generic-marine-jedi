@@ -17,6 +17,7 @@
 #include "atlas/array.h"
 
 #include "oops/base/Variables.h"
+#include "oops/mpi/mpi.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
@@ -137,6 +138,9 @@ namespace oisst {
     // Ligang: will be updated with missing_value process!
     for (int i = 0; i < size; i++)
       dp += fd(i)*fd_other(i);
+
+    // sum results across PEs
+    oops::mpi::world().allReduceInPlace(dp, eckit::mpi::Operation::SUM);
 
     return dp;
   }

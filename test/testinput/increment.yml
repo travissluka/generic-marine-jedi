@@ -8,4 +8,4 @@ inc variables: [sea_surface_temperature]
 
 increment test:
   date: 1985-01-01T12:00:00Z
-  tolerance: 1e-6
+  tolerance: 1e-12
