@@ -27,6 +27,7 @@ ecbuild_add_library( TARGET   oisst
 
 # add source code in the subdirectories
 add_subdirectory(Covariance)
+add_subdirectory(Fields)
 add_subdirectory(Geometry)
 add_subdirectory(GetValues)
 add_subdirectory(Increment)
