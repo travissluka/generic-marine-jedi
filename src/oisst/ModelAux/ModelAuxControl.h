@@ -39,8 +39,13 @@ namespace oisst {
     ModelAuxControl(const ModelAuxControl &, const bool);
     ~ModelAuxControl();
 
+    // I/O
+    void read(const eckit::Configuration &) {}
+    void write(const eckit::Configuration &) const {}
+
     // math operators
     ModelAuxControl & operator +=(const ModelAuxIncrement &);
+    double norm() const {return 0.0;}
 
    private:
     void print(std::ostream & os) const;

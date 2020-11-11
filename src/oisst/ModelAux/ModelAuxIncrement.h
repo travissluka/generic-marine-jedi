@@ -52,6 +52,10 @@ namespace oisst {
     double norm() const;
     void zero();
 
+    // I/O
+    void read(const eckit::Configuration &) {}
+    void write(const eckit::Configuration &) const {}
+
     // serialize and deserialize
     size_t serialSize() const override {return 0;}
     void serialize(std::vector<double> &) const override {}
