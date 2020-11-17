@@ -1,4 +1,4 @@
-add_subdirectory( oisst )
+add_subdirectory( umdsst )
 add_subdirectory( mains )
 
 # Add the CPP coding norms test
@@ -9,7 +9,7 @@ if(NOT CPPLINT_PY)
   set(CPPLINT_PY ${CMAKE_BINARY_DIR}/bin/cpplint.py)
 endif()
 
-ecbuild_add_test( TARGET oisst_coding_norms
+ecbuild_add_test( TARGET umdsst_coding_norms
                   TYPE SCRIPT
                   COMMAND ${CPPLINT_PY}
                   ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR}

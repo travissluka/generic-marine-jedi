@@ -1,4 +1,4 @@
-list( APPEND oisst_test_input
+list( APPEND umdsst_test_input
   testinput/geometry.yml
   testinput/errorcovariance.yml
   testinput/getvalues.yml
@@ -13,14 +13,14 @@ list( APPEND oisst_test_input
 
 # link the input files for the tests
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
-foreach(FILENAME ${oisst_test_input})
+foreach(FILENAME ${umdsst_test_input})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
 endforeach()
 
 
-list( APPEND oisst_test_data
+list( APPEND umdsst_test_data
   Data/19850101_regridded_sst.nc
   Data/obs_sst.nc
   )
@@ -28,7 +28,7 @@ list( APPEND oisst_test_data
 
 # link the input files for the tests
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
-foreach(FILENAME ${oisst_test_data})
+foreach(FILENAME ${umdsst_test_data})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
@@ -43,64 +43,64 @@ set( MPI_PES 2)
 #================================================================================
 
    ecbuild_add_test(
-     TARGET  test_oisst_geometry
+     TARGET  test_umdsst_geometry
      SOURCES executables/TestGeometry.cc
      ARGS    testinput/geometry.yml
      MPI     ${MPI_PES}
-     LIBS    oisst )
+     LIBS    umdsst )
 
    ecbuild_add_test(
-     TARGET  test_oisst_state
+     TARGET  test_umdsst_state
      SOURCES executables/TestState.cc
      ARGS    testinput/state.yml
      MPI     ${MPI_PES}
-     LIBS    oisst )
+     LIBS    umdsst )
 
    ecbuild_add_test(
-     TARGET  test_oisst_increment
+     TARGET  test_umdsst_increment
      SOURCES executables/TestIncrement.cc
      ARGS    testinput/increment.yml
      MPI     ${MPI_PES}
-     LIBS    oisst )
+     LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_modelauxcontrol
+#    TARGET  test_umdsst_modelauxcontrol
 #    SOURCES executables/TestModelAuxControl.cc
 #    ARGS    testinput/modelaux.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_getvalues
+#    TARGET  test_umdsst_getvalues
 #    SOURCES executables/TestGetValues.cc
 #    ARGS    testinput/getvalues.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_lineargetvalues
+#    TARGET  test_umdsst_lineargetvalues
 #    SOURCES executables/TestLinearGetValues.cc
 #    ARGS    testinput/lineargetvalues.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_errorcovariance
+#    TARGET  test_umdsst_errorcovariance
 #    SOURCES executables/TestErrorCovariance.cc
 #    ARGS    testinput/errorcovariance.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_modelauxcovariance
+#    TARGET  test_umdsst_modelauxcovariance
 #    SOURCES executables/TestModelAuxCovariance.cc
 #    ARGS    testinput/modelaux.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )
 
 #  ecbuild_add_test(
-#    TARGET  test_oisst_modelauxincrement
+#    TARGET  test_umdsst_modelauxincrement
 #    SOURCES executables/TestModelAuxIncrement.cc
 #    ARGS    testinput/modelaux.yml
 #    MPI     ${MPI_PES}
-#    LIBS    oisst )
+#    LIBS    umdsst )

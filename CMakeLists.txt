@@ -4,12 +4,12 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 ################################################################################
-# OISST
+# UMDSST
 ################################################################################
 
 cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
 
-project( oisst C CXX Fortran)
+project( umdsst C CXX Fortran)
 
 set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 
@@ -31,7 +31,7 @@ ecbuild_declare_project()
 ecbuild_enable_fortran( REQUIRED )
 ecbuild_add_cxx11_flags()
 
-set( OISST_LINKER_LANGUAGE CXX )
+set( UMDSST_LINKER_LANGUAGE CXX )
 
 
 ################################################################################
@@ -84,28 +84,28 @@ link_libraries(${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES})
 ################################################################################
 # Export package info
 ################################################################################
-list( APPEND OISST_TPLS atlas atlas_f LAPACK MPI NetCDF )
+list( APPEND UMDSST_TPLS atlas atlas_f LAPACK MPI NetCDF )
 
-set( OISST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+set( UMDSST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                        ${CMAKE_CURRENT_BINARY_DIR}/src
                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
-set( OISST_LIBRARIES oisst )
+set( UMDSST_LIBRARIES umdsst )
 
-get_directory_property( OISST_DEFINITIONS COMPILE_DEFINITIONS )
+get_directory_property( UMDSST_DEFINITIONS COMPILE_DEFINITIONS )
 
-foreach( _tpl ${OISST_TPLS} )
+foreach( _tpl ${UMDSST_TPLS} )
 string( TOUPPER ${_tpl} TPL )
-list( APPEND OISST_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
-list( APPEND OISST_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
-list( APPEND OISST_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
+list( APPEND UMDSST_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
+list( APPEND UMDSST_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
+list( APPEND UMDSST_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
 endforeach()
 
 
 ################################################################################
 # Sources
 ################################################################################
-include( oisst_compiler_flags )
-include_directories( ${OISST_INCLUDE_DIRS} ${OISST_EXTRA_INCLUDE_DIRS} )
+include( umdsst_compiler_flags )
+include_directories( ${UMDSST_INCLUDE_DIRS} ${UMDSST_EXTRA_INCLUDE_DIRS} )
 
 add_subdirectory( src )
 add_subdirectory( test )
@@ -119,7 +119,7 @@ endif()
 ################################################################################
 
 # prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME oisst )
+ecbuild_install_project( NAME umdsst )
 
 # print the summary of the configuration
 ecbuild_print_summary()

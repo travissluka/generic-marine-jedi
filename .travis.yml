@@ -32,13 +32,13 @@ script:
 - |
   # build code
   docker exec -it jcsda_container bash \
-   -c 'cd /jcsda/build && ecbuild /jcsda/src/bundle && cd oisst && make -j 4; exit $?' \
+   -c 'cd /jcsda/build && ecbuild /jcsda/src/bundle && cd umdsst && make -j 4; exit $?' \
    || travis_terminate 1
 
 - |
   # test code
   docker exec -it jcsda_container bash \
-   -c 'cd /jcsda/build/oisst && ctest --output-on-failure' \
+   -c 'cd /jcsda/build/umdsst && ctest --output-on-failure' \
    || travis_terminate 1
   
 after_success: 
