@@ -24,7 +24,6 @@
 #include "oops/util/missingValues.h"
 
 using atlas::array::make_view;
-using atlas::option::name;
 
 namespace umdsst {
 
@@ -45,8 +44,9 @@ namespace umdsst {
     for (int i = 0; i < vars_.size(); i++) {
       std::string var = vars_[i];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
-                         name(var));
-      auto fd = make_view<double, 1>(fld);
+                         atlas::option::levels(1) |
+                         atlas::option::name(var));
+      auto fd = make_view<double, 2>(fld);
       fd.assign(0.0);
 
       atlasFieldSet_->add(fld);
@@ -65,10 +65,10 @@ namespace umdsst {
   Fields & Fields::operator =(const Fields & other) {
     const int size = geom_->atlasFunctionSpace()->size();
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet_->field(0));
+      auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(0));
       for (int j = 0; j < size; j++)
-        fd(j) = fd_other(j);
+        fd(j, 0) = fd_other(j, 0);
     }
     return *this;
   }
@@ -77,14 +77,14 @@ namespace umdsst {
 
   Fields & Fields::operator+=(const Fields &other) {
     const int size = geom_->atlasFunctionSpace()->size();
-    auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_other = make_view<double, 1>(other.atlasFieldSet_->field(0));
+    auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(0));
 
     for (int j = 0; j < size; j++) {
-      if (fd(j) == missing_ || fd_other(j) == other.missing_)
-        fd(j) = missing_;
+      if (fd(j, 0) == missing_ || fd_other(j, 0) == other.missing_)
+        fd(j, 0) = missing_;
       else
-        fd(j) += fd_other(j);
+        fd(j, 0) += fd_other(j, 0);
     }
 
     return *this;
@@ -94,14 +94,14 @@ namespace umdsst {
 
   void Fields::accumul(const double &zz, const Fields &rhs) {
     const size_t size = geom_->atlasFunctionSpace()->size();
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
 
     for (size_t i = 0; i < size; i++) {
-      if (fd(i) == missing_ || fd_rhs(i) == missing_)
-        fd(i) = missing_;
+      if (fd(i, 0) == missing_ || fd_rhs(i, 0) == missing_)
+        fd(i, 0) = missing_;
       else
-        fd(i) +=  zz*fd_rhs(i);
+        fd(i, 0) +=  zz*fd_rhs(i, 0);
     }
   }
 
@@ -109,14 +109,14 @@ namespace umdsst {
 
   double Fields::norm() const {
     const int size = geom_->atlasFunctionSpace()->size();
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
 
     int nValid = 0;
     double norm = 0.0, s = 0.0;
     for (int i = 0; i < size; i++) {
-      if (fd(i) != missing_) {
+      if (fd(i, 0) != missing_) {
         nValid += 1;
-        s += fd(i)*fd(i);
+        s += fd(i, 0)*fd(i, 0);
       }
     }
 
@@ -135,11 +135,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Fields::zero() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < size; i++)
-        fd(i) = 0.0;
+        fd(i, 0) = 0.0;
   }
 
 // ----------------------------------------------------------------------------
@@ -147,6 +147,7 @@ namespace umdsst {
   void Fields::read(const eckit::Configuration & conf) {
     // create a global field valid on the root PE
     atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
+                         atlas::option::levels(1) |
                          atlas::option::global());
 
     // following code block should execute on the root PE only
@@ -154,7 +155,7 @@ namespace umdsst {
       int time = 0, lon = 0, lat = 0;
       std::string filename;
 
-      auto fd = make_view<double, 1>(globalSst);
+      auto fd = make_view<double, 2>(globalSst);
 
       // get filename
       if (!conf.get("filename", filename))
@@ -199,7 +200,7 @@ namespace umdsst {
       int idx = 0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++)
-          fd(idx++) = static_cast<double>(sstData[j][i]);
+          fd(idx++, 0) = static_cast<double>(sstData[j][i]);
     }
 
     // scatter to the PEs
@@ -211,6 +212,7 @@ namespace umdsst {
   void Fields::write(const eckit::Configuration & conf) const {
     // gather from the PEs
     atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
+        atlas::option::levels(1) |
         atlas::option::global());
     geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field(0), globalSst);
 
@@ -267,15 +269,15 @@ namespace umdsst {
       sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
       // write data to the file
-      auto fd = make_view<double, 1>(globalSst);
+      auto fd = make_view<double, 2>(globalSst);
       float sstData[time][lat][lon];
       int idx = 0;
       for (int j = 0; j < lat; j++)
         for (int i = 0; i < lon; i++) {
-          if (fd(idx) == missing_)
+          if (fd(idx, 0) == missing_)
             sstData[0][j][i] = fillvalue;
           else
-            sstData[0][j][i] = static_cast<float>(fd(idx));
+            sstData[0][j][i] = static_cast<float>(fd(idx, 0));
           idx++;
         }
 
@@ -301,7 +303,7 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Fields::print(std::ostream & os) const {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
     double mean = 0.0, sum = 0.0,
            min = std::numeric_limits<double>::max(),
@@ -309,11 +311,11 @@ namespace umdsst {
     int nValid = 0;
 
     for (int i = 0; i < size; i++)
-      if (fd(i) != missing_) {
-        if (fd(i) < min) min = fd(i);
-        if (fd(i) > max) max = fd(i);
+      if (fd(i, 0) != missing_) {
+        if (fd(i, 0) < min) min = fd(i, 0);
+        if (fd(i, 0) > max) max = fd(i, 0);
 
-        sum += fd(i);
+        sum += fd(i, 0);
         nValid++;
       }
 

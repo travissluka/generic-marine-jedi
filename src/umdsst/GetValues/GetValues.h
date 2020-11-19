@@ -12,20 +12,28 @@
 #include <ostream>
 #include <string>
 
+#include "umdsst/GetValues/LocationsWrapper.h"
+#include "umdsst/GetValues/GeoVaLsWrapper.h"
+
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
 #include "ufo/Locations.h"
 
 // forward declarations
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
-}
 namespace umdsst {
   class Geometry;
   class State;
 }
+
+namespace oops {
+  class InterpolatorUnstructured;
+}
+namespace ufo {
+  class GeoVaLs;
+  class Locations;
+}
+
 
 // ----------------------------------------------------------------------------
 
@@ -50,8 +58,9 @@ namespace umdsst {
    private:
     void print(std::ostream &) const;
 
+    std::unique_ptr<oops::InterpolatorUnstructured> interpolator_;
     std::shared_ptr<const Geometry> geom_;
-    ufo::Locations locs_;
+    LocationsWrapper locs_;
   };
 }  // namespace umdsst
 

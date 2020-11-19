@@ -1,7 +1,10 @@
 geometry:
-  # insert other model specific things here
+  grid: S360x180
+  domain:
+    type: global
+    west: -180
 
-state variables: &state_vars [var1, var2]
+state variables: &state_vars [sea_surface_temperature]
 
 locations:
   window begin: 2018-04-15T00:00:00Z
@@ -16,11 +19,12 @@ locations:
         lat2: 90
         lon1: 0
         lon2: 360
-      obs errors: [1.0, 1.0]
+      obs errors: [1.0]
 
 getvalues test:
   state generate:
     date: 2018-04-15T00:00:00Z
+    filename: Data/19850101_regridded_sst.nc
     state variables: *state_vars
   interpolation tolerance: 1e-10
 

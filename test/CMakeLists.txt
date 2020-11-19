@@ -70,12 +70,12 @@ set( MPI_PES 2)
 #    MPI     ${MPI_PES}
 #    LIBS    umdsst )
 
-#  ecbuild_add_test(
-#    TARGET  test_umdsst_getvalues
-#    SOURCES executables/TestGetValues.cc
-#    ARGS    testinput/getvalues.yml
-#    MPI     ${MPI_PES}
-#    LIBS    umdsst )
+  ecbuild_add_test(
+    TARGET  test_umdsst_getvalues
+    SOURCES executables/TestGetValues.cc
+    ARGS    testinput/getvalues.yml
+    MPI     ${MPI_PES}
+    LIBS    umdsst )
 
 #  ecbuild_add_test(
 #    TARGET  test_umdsst_lineargetvalues

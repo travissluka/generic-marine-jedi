@@ -75,10 +75,10 @@ namespace umdsst {
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
+      auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
+      auto fd_other = make_view<double, 2>(other.atlasFieldSet()->field(0));
       for (int j = 0; j < size; j++)
-        fd(j) -= fd_other(j);
+        fd(j, 0) -= fd_other(j, 0);
     }
 
     return *this;
@@ -94,11 +94,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   Increment & Increment::operator *=(const double &zz) {
-    auto fd       = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int j = 0; j < size; j++)
-      fd(j) *= zz;
+      fd(j, 0) *= zz;
 
     return *this;
   }
@@ -116,28 +116,28 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::diff(const State & x1, const State & x2) {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_x1 = make_view<double, 1>(x1.atlasFieldSet()->field(0));
-    auto fd_x2 = make_view<double, 1>(x2.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_x1 = make_view<double, 2>(x1.atlasFieldSet()->field(0));
+    auto fd_x2 = make_view<double, 2>(x2.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
 
     for (int i = 0; i < size; i++)
-      fd(i) = fd_x1(i) - fd_x2(i);
+      fd(i, 0) = fd_x1(i, 0) - fd_x2(i, 0);
   }
 
 // ----------------------------------------------------------------------------
 
   double Increment::dot_product_with(const Increment &other) const {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_other = make_view<double, 1>(other.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_other = make_view<double, 2>(other.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
     double dp = 0.0;
 
     // Ligang: will be updated with missing_value process!
     for (int i = 0; i < size; i++)
-      dp += fd(i)*fd_other(i);
+      dp += fd(i, 0)*fd_other(i, 0);
 
     // sum results across PEs
     oops::mpi::world().allReduceInPlace(dp, eckit::mpi::Operation::SUM);
@@ -148,31 +148,31 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Increment::ones() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     fd.assign(1.0);
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::random() {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
 
     util::NormalDistribution<double> x(size, 0, 1.0, 1);
 
     for (int i = 0; i < size; i++)
-      fd(i) = x[i];
+      fd(i, 0) = x[i];
   }
 
 // ----------------------------------------------------------------------------
 
   void Increment::schur_product_with(const Increment &rhs ) {
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 1>(rhs.atlasFieldSet()->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
 
     const int size = geom_->atlasFunctionSpace()->size();
     for (int i = 0; i < size; i++)
-      fd(i) *= fd_rhs(i);
+      fd(i, 0) *= fd_rhs(i, 0);
   }
 
 // ----------------------------------------------------------------------------
@@ -210,10 +210,10 @@ namespace umdsst {
     for (int i = 0; i < dir_size; i++)
       ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
-    auto fd = make_view<double, 1>(atlasFieldSet_->field(0));
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     for (int i = 0; i < dir_size; i++) {
       int idx = ixdir[i] + iydir[i]*nx;
-      fd(idx) = 1.0;
+      fd(idx, 0) = 1.0;
     }
   }
 
