@@ -1,0 +1,22 @@
+window length: P1D
+window begin: 2018-04-15T00:00:00Z
+
+geometry:
+  grid: S360x180
+  domain:
+    type: global
+    west: -180
+
+forecasts:
+  date: 2018-04-15T12:00:00Z
+  state variables: [sea_surface_temperature]
+  filename: Data/19850101_regridded_sst.nc
+
+observations:
+  - obs space:
+      name: SST
+      obsdatain: {obsfile: ./Data/obs_sst.nc}
+      obsdataout: {obsfile: ./Data/hofx_sst.nc}
+      simulated variables: [sea_surface_temperature]
+    obs operator:
+      name: Identity
