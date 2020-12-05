@@ -10,9 +10,12 @@
 #include "umdsst/State/State.h"
 #include "umdsst/Geometry/Geometry.h"
 #include "umdsst/Increment/Increment.h"
+#include "umdsst/GetValues/GeoVaLsWrapper.h"
+#include "umdsst/GetValues/GeoVaLsWrapperAD.h"
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/generic/InterpolatorUnstructured.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -26,18 +29,15 @@ namespace umdsst {
   LinearGetValues::LinearGetValues(const Geometry & geom,
                                    const ufo::Locations & locs)
     : geom_( new Geometry(geom)), locs_(locs) {
-    util::abor1_cpp(
-      "LinearGetValues::LinearGetValues() needs to be implemented.",
-      __FILE__, __LINE__);
+    interpolator_.reset( new oops::InterpolatorUnstructured(
+                               eckit::LocalConfiguration(),
+                               *geom_->atlasFunctionSpace(),
+                               locs_.atlasFunctionSpace()) );
   }
 
 // ----------------------------------------------------------------------------
 
-  LinearGetValues::~LinearGetValues() {
-    util::abor1_cpp(
-      "LinearGetValues::~LinearGetValues() needs to be implemented.",
-      __FILE__, __LINE__);
-  }
+  LinearGetValues::~LinearGetValues() { }
 
 // ----------------------------------------------------------------------------
 
@@ -45,9 +45,20 @@ namespace umdsst {
                                       const util::DateTime & t1,
                                       const util::DateTime & t2,
                                       const ufo::GeoVaLs & geovals) const {
-    util::abor1_cpp(
-      "LinearGetValues::fillGeoVaLsAD() needs to be implemented.",
-      __FILE__, __LINE__);
+    oops::Variables vars = geovals.getVars();
+    for (size_t i = 0; i < vars.size(); i++) {
+      // expect only sst for now
+      if (vars[i] != "sea_surface_temperature")
+        util::abor1_cpp("LinearGetValues::fillGeoVaLsAD,unkown state variable");
+
+      atlas::Field fgvl = locs_.atlasFunctionSpace()->createField<double>(
+                                                 atlas::option::levels(1));
+      // copy from geovals to fin so it can be used in apply_ad;
+      GeoVaLsWrapperAD(geovals, locs_.locs()).fill(t1, t2, fgvl);
+
+      interpolator_->apply_ad(fgvl,
+        inc.atlasFieldSet()->field("sea_surface_temperature"));
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -56,8 +67,20 @@ namespace umdsst {
                                       const util::DateTime & t1,
                                       const util::DateTime & t2,
                                       ufo::GeoVaLs & geovals) const {
-    util::abor1_cpp("LinearGetValues::fillGeoVaLsTL() needs to be implemented.",
-                    __FILE__, __LINE__);
+    oops::Variables vars = geovals.getVars();
+    for (size_t i = 0; i < vars.size(); i++) {
+      // expect only sst for now
+      if (vars[i] != "sea_surface_temperature")
+        util::abor1_cpp("LinearGetValues::fillGeoVaLsTL,unkown state variable");
+
+      atlas::Field fout = locs_.atlasFunctionSpace()->createField<double>(
+                                                 atlas::option::levels(1));
+
+      interpolator_->apply(
+        inc.atlasFieldSet()->field("sea_surface_temperature"), fout);
+
+      GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fout);
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -66,8 +89,20 @@ namespace umdsst {
                                       const util::DateTime & t1,
                                       const util::DateTime & t2,
                                       ufo::GeoVaLs & geovals) {
-    util::abor1_cpp("LinearGetValues::setTrajectory() needs to be implemented.",
-                    __FILE__, __LINE__);
+    oops::Variables vars = geovals.getVars();
+    for (size_t i = 0; i < vars.size(); i++) {
+      // expect only sst for now
+      if (vars[i] != "sea_surface_temperature")
+        util::abor1_cpp("LinearGetValues::setTrajectory,unkown state variable");
+
+      atlas::Field fout = locs_.atlasFunctionSpace()->createField<double>(
+                                                 atlas::option::levels(1));
+
+      interpolator_->apply(
+        state.atlasFieldSet()->field("sea_surface_temperature"), fout);
+
+      GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fout);
+    }
   }
 
 // ----------------------------------------------------------------------------
