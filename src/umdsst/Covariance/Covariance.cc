@@ -17,6 +17,7 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 
 namespace umdsst {
 
@@ -26,43 +27,37 @@ namespace umdsst {
                          const oops::Variables & vars,
                          const eckit::Configuration & conf,
                          const State & x1, const State & x2) {
-    util::abor1_cpp("Covariance::Covariance() needs to be implemented.",
-                     __FILE__, __LINE__);
+    oops::Log::trace() << "Covariance created!" << std::endl;  // ?
   }
 
 // ----------------------------------------------------------------------------
 
   Covariance::~Covariance() {
-    util::abor1_cpp("Covariance::~Covariance() needs to be implemented.",
-                     __FILE__, __LINE__);
+    oops::Log::trace() << "Covariance destructed!" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
-  void Covariance::inverseMultiply(const Increment &, Increment &) const {
-    util::abor1_cpp("Covariance::inverseMultiply() needs to be implemented.",
-                     __FILE__, __LINE__);
+  void Covariance::inverseMultiply(const Increment & dxin,
+                                   Increment & dxout) const {
+    dxout = dxin;  // Identity Cov
   }
 
 // ----------------------------------------------------------------------------
 
   void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
-    util::abor1_cpp("Covariance::multiply() needs to be implemented.",
-                     __FILE__, __LINE__);
+    dxout = dxin;  // Identity
   }
 
 // ----------------------------------------------------------------------------
 
-  void Covariance::randomize(Increment &) const {
-    util::abor1_cpp("Covariance::randomize() needs to be implemented.",
-                    __FILE__, __LINE__);
+  void Covariance::randomize(Increment & dx) const {
+    dx.random();
   }
 
 // ----------------------------------------------------------------------------
 
   void Covariance::print(std::ostream & os) const {
-    util::abor1_cpp("Covariance::print() needs to be implemented.",
-                     __FILE__, __LINE__);
     os << "(TODO, print diagnostic info about the Covariance here)"
        << std::endl;
   }

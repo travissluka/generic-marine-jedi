@@ -1,11 +1,14 @@
 geometry:
-  # insert other model specific things here
+  grid: S360x180
+  domain:
+    type: global
+    west: -180
 
 covariance test:
   tolerance: 1e-12
-  testinverse: false
+  testinverse: true  # false
 
-analysis variables: &vars [var1, var2]
+analysis variables: &vars [sea_surface_temperature]
 
 background:
   state variables: *vars
