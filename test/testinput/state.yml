@@ -5,7 +5,7 @@ geometry:
     west: -180
 
 state test:
-  norm file: 286.53398478426465  # 17904.548097851199  # 300.0
+  norm file: 17.409813550061454  # 286.53398478426465
   tolerance: 1e-6
   date: &date 1985-01-01T12:00:00Z
   statefile:

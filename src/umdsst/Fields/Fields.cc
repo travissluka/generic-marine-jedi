@@ -159,13 +159,13 @@ namespace umdsst {
 
       // get filename
       if (!conf.get("filename", filename))
-        util::abor1_cpp("Increment::read(), Get filename failed.",
+        util::abor1_cpp("Fields::read(), Get filename failed.",
           __FILE__, __LINE__);
 
       // open netCDF file
       netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
       if (file.isNull())
-        util::abor1_cpp("Increment::read(), Create netCDF file failed.",
+        util::abor1_cpp("Fields::read(), Create netCDF file failed.",
           __FILE__, __LINE__);
 
       // get file dimensions
@@ -195,6 +195,10 @@ namespace umdsst {
         for (int i = 0; i < lon; i++)
           if (abs(sstData[j][i]-(missing_nc)) < epsilon)
             sstData[j][i] = missing_;
+          else
+            // Kelvin to Celsius which JEDI use internally, will check if the
+            // units is Kelvin or Celsius in the future
+            sstData[j][i] -= 273.15;
 
       // float to double
       int idx = 0;
@@ -223,16 +227,16 @@ namespace umdsst {
 
       // get filename
       if (!conf.get("filename", filename))
-        util::abor1_cpp("Increment::write(), Get filename failed.",
+        util::abor1_cpp("Fields::write(), Get filename failed.",
                         __FILE__, __LINE__);
       else
-        oops::Log::info() << "Increment::write(), filename=" << filename
+        oops::Log::info() << "Fields::write(), filename=" << filename
                           << std::endl;
 
       // create netCDF file
       netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
       if (file.isNull())
-        util::abor1_cpp("Increment::write(), Create netCDF file failed.",
+        util::abor1_cpp("Fields::write(), Create netCDF file failed.",
                         __FILE__, __LINE__);
 
       // define dims
@@ -246,7 +250,7 @@ namespace umdsst {
       netCDF::NcDim latDim  = file.addDim("lat" , lat);
       netCDF::NcDim lonDim  = file.addDim("lon" , lon);
       if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
-        util::abor1_cpp("Increment::write(), Define dims failed.",
+        util::abor1_cpp("Fields::write(), Define dims failed.",
                         __FILE__, __LINE__);
 
       std::vector<netCDF::NcDim> dims;
@@ -277,7 +281,10 @@ namespace umdsst {
           if (fd(idx, 0) == missing_)
             sstData[0][j][i] = fillvalue;
           else
-            sstData[0][j][i] = static_cast<float>(fd(idx, 0));
+            // doulbe to float, also convert JEDI Celsius to Kelvin, in the
+            // future it should be able to handle both Kelvin and Celsius.
+            sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
+
           idx++;
         }
 
