@@ -108,10 +108,7 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void LinearGetValues::print(std::ostream & os) const {
-    os << "insert diagnostic information about LinearGetValues"
-       << std::endl;
-    util::abor1_cpp("LinearGetValues::print() needs to be implemented.",
-                    __FILE__, __LINE__);
+    os << "umdsst::LinearGetValues" << std::endl;
   }
 
 // ----------------------------------------------------------------------------

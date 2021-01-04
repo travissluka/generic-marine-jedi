@@ -61,10 +61,7 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void GetValues::print(std::ostream & os) const {
-    os << "insert diagnostic information about getvalues"
-      << std::endl;
-    util::abor1_cpp("GetValues::print() needs to be implemented.",
-                     __FILE__, __LINE__);
+    os << "umdsst::GetValues" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
