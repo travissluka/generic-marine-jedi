@@ -7,10 +7,12 @@ list( APPEND umdsst_test_input
   testinput/lineargetvalues.yml
   testinput/modelaux.yml
   testinput/state.yml
+  testinput/dirac.yml
   )
 
 list( APPEND umdsst_test_ref
   testref/hofx_nomodel.ref
+  testref/dirac.ref
   )
 
 list( APPEND umdsst_test_data
@@ -171,15 +173,15 @@ endfunction()
 # Test of executables
 #================================================================================
 
-umdsst_exe_test( NAME hofx_nomodel
-                 EXE  umdsst_hofx_nomodel.x )
+  umdsst_exe_test( NAME hofx_nomodel
+                   EXE  umdsst_hofx_nomodel.x )
 
 # umdsst_exe_test( NAME staticbinit
 #                  EXE  umdsst_staticbinit.x )
 
-# umdsst_exe_test( NAME dirac
-#                  EXE  umdsst_dirac.x
-#                  TEST_DEPENDS test_umdsst_staticbinit )
+  umdsst_exe_test( NAME dirac
+                   EXE  umdsst_dirac.x
+                   TEST_DEPENDS test_umdsst_staticbinit )
 
 # umdsst_exe_test( NAME var
 #                  EXE  umdsst_var.x

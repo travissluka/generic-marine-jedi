@@ -151,6 +151,8 @@ namespace umdsst {
                          atlas::option::global());
 
     // following code block should execute on the root PE only
+    // Ligang: How do you do to decide which PEs to run with Atlas?
+    // Check the above Fields::norm() which sums results across PEs.
     if ( globalSst.size() != 0 ) {
       int time = 0, lon = 0, lat = 0;
       std::string filename;
@@ -221,17 +223,19 @@ namespace umdsst {
     geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field(0), globalSst);
 
     // The following code block should execute on the root PE only
+    // Ligang: How do you do the above? Use the following if statement.
     if ( globalSst.size() != 0 ) {
       int lat, lon, time = 1;
       std::string filename;
 
       // get filename
-      if (!conf.get("filename", filename))
+      if (!conf.get("filename", filename)) {
         util::abor1_cpp("Fields::write(), Get filename failed.",
                         __FILE__, __LINE__);
-      else
+      } else {
         oops::Log::info() << "Fields::write(), filename=" << filename
                           << std::endl;
+      }
 
       // create netCDF file
       netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);

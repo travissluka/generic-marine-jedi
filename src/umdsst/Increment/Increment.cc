@@ -206,14 +206,44 @@ namespace umdsst {
     const int ny = static_cast<int>(geom_->atlasFunctionSpace()->grid().ny());
     const int nx = static_cast<int>(
       ((atlas::RegularLonLatGrid&)(geom_->atlasFunctionSpace()->grid())).nx() );
-
     for (int i = 0; i < dir_size; i++)
       ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
+    atlas::Field gi = geom_->atlasFunctionSpace()->global_index();
+    atlas::Field ri = geom_->atlasFunctionSpace()->remote_index();
+    auto fd_gi = make_view<int64_t, 1>(gi);
+    auto fd_ri = make_view<int, 1>(ri);
+
+    const int sz = geom_->atlasFunctionSpace()->size();
+
     auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     for (int i = 0; i < dir_size; i++) {
-      int idx = ixdir[i] + iydir[i]*nx;
-      fd(idx, 0) = 1.0;
+      // Ligang: 2D to 1D global_index, the 1D global_index starts from 1, which
+      // is normally oriented to user; while 1D remote_index and the 2D
+      // specification start from 0 and (0,0) (as in ncview), which is kind
+      // oriented to C++ programming. The relationship below is only for our
+      // simple case (grid), need to dig deep in how atlas store globa_indices.
+      int g_idx = iydir[i]*nx + ixdir[i] + 1;
+
+      // Use if below to avoid unnecessary search.
+      if (fd_gi(0) <= g_idx && g_idx <= fd_gi(sz-1)) {
+        // Find the corresponding remote_index to the global g_idx on this CPU.
+        // If we know for sure the array fd_gi() is increasing, we can use more
+        // efficient algorithm for search.
+        int j_loc = 0;
+        for (j_loc = 0; j_loc < sz; j_loc++) {
+          if (fd_gi(j_loc) == g_idx)
+            break;
+        }
+        if (j_loc >= sz) {
+          util::abor1_cpp("Increment::dirac(), failed to find global idx.",
+                           __FILE__, __LINE__);
+        } else {
+          // The arrays of globa/remote index should be matching.
+          int r_idx = fd_ri(j_loc);
+          fd(r_idx, 0) = 1.0;
+        }
+      }
     }
   }
 
