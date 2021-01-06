@@ -11,6 +11,7 @@ forecasts:
   date: 2018-04-15T12:00:00Z
   state variables: [sea_surface_temperature]
   filename: Data/19850101_regridded_sst.nc
+  kelvin: true
 
 observations:
   - obs space:

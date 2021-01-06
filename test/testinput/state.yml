@@ -11,6 +11,7 @@ state test:
   statefile:
     date: *date
     filename: Data/19850101_regridded_sst.nc
+    kelvin: true
     state variables: &state_vars [sea_surface_temperature]
   statefileout: 
     datadir: ./Data
@@ -18,4 +19,5 @@ state test:
     type: fc
     date: 1985-01-01T12:00:00Z
     filename: Data/out.19850101_regridded_sst.nc
+    kelvin: true
     state variables: *state_vars
