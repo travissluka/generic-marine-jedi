@@ -9,11 +9,13 @@
 #define UMDSST_GETVALUES_GEOVALSWRAPPERAD_H_
 
 #include "ufo/GeoVaLs.h"
+#include "ufo/Locations.h"
 
 namespace umdsst {
 
   extern "C" {
-    void geovals_wrapper_ad_fill_f90(const int &, const int &,
+    void geovals_wrapper_ad_fill_f90(const int &,
+                                  const ufo::Locations &,
                                   const util::DateTime **,
                                   const util::DateTime **,
                                   const atlas::field::FieldImpl *);
@@ -23,19 +25,19 @@ namespace umdsst {
    public:
     explicit GeoVaLsWrapperAD(const ufo::GeoVaLs & geovals,
                             const ufo::Locations & locs)
-     : geovals_(&geovals), locs_(&locs) {}
+     : geovals_(&geovals), locs_(locs) {}
 
     void fill(const util::DateTime & t1,
               const util::DateTime & t2,
               const atlas::Field & fld) {
       const util::DateTime * t1p = &t1;
       const util::DateTime * t2p = &t2;
-      geovals_wrapper_ad_fill_f90(geovals_->toFortran(), locs_->toFortran(),
+      geovals_wrapper_ad_fill_f90(geovals_->toFortran(), locs_,
                                &t1p, &t2p, fld.get());
     }
    private:
      const ufo::GeoVaLs *geovals_;
-     const ufo::Locations *locs_;
+     const ufo::Locations locs_;
   };
 }  // namespace umdsst
 

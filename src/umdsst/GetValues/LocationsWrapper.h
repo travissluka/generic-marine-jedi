@@ -18,18 +18,17 @@
 
 namespace umdsst {
 
-  extern "C" {
-    void locations_wrapper_fill_f90(const int &,
-                                    const atlas::field::FieldImpl *);
-  }
-
   class LocationsWrapper {
    public:
     explicit LocationsWrapper(const ufo::Locations & locs) : locs_(locs) {
       atlas::Field field("lonlat",
                          atlas::array::make_datatype<double>(),
-                         atlas::array::make_shape(locs.nobs(), 2) );
-      locations_wrapper_fill_f90(locs_.toFortran(), field.get());
+                         atlas::array::make_shape(locs.size(), 2) );
+      auto fd = atlas::array::make_view<double, 2>(field);
+      for (int j = 0; j < locs.size(); j++) {
+        fd(j, 0) = locs.lons()[j];
+        fd(j, 1) = locs.lats()[j];
+      }
       functionSpace_.reset(new atlas::functionspace::PointCloud(field));
     }
 
