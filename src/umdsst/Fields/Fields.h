@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 
+#include "atlas/field.h"
+
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Printable.h"
@@ -64,6 +66,11 @@ namespace umdsst {
     std::shared_ptr<atlas::FieldSet> atlasFieldSet() const;
     std::shared_ptr<const Geometry> geometry() const;
     const oops::Variables & variables() const { return vars_; }
+
+    // Ligang: 20210111, adjust for JEDI rep updates
+    void setAtlas(atlas::FieldSet *) const;
+    void toAtlas(atlas::FieldSet *) const;
+    void fromAtlas(atlas::FieldSet *);
 
    protected:
     std::shared_ptr<atlas::FieldSet> atlasFieldSet_;

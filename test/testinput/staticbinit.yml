@@ -1,0 +1,30 @@
+geometry:
+  grid: S360x180
+  domain:
+    type: global
+    west: -180
+
+analysis variables: &vars [sea_surface_temperature]  # must have
+
+background:  # must have
+  state variables: *vars
+  date: 2018-04-15T00:00:00Z
+  filename: Data/19850101_regridded_sst.nc
+
+background error:
+  covariance model: BUMP
+  bump:
+    verbosity: main
+    datadir: Data
+    forced_radii: 1
+    method: cor
+    new_nicas: 1
+    ntry: 3
+    prefix: Chen
+    resol: 6.0
+    mpicom: 2
+    rh: 
+      sea_surface_temperature: [3000.0e3]
+    rv:
+      sea_surface_temperature: [1]
+    strategy: specific_univariate

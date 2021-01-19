@@ -4,7 +4,7 @@ ecbuild_add_executable( TARGET  umdsst_convertstate.x
 
 ecbuild_add_executable( TARGET  umdsst_dirac.x
                         SOURCES Dirac.cc
-                        LIBS    umdsst )
+                        LIBS    umdsst saber)
 
 ecbuild_add_executable( TARGET  umdsst_hofx_nomodel.x
                         SOURCES HofXNoModel.cc
@@ -12,7 +12,7 @@ ecbuild_add_executable( TARGET  umdsst_hofx_nomodel.x
 
 ecbuild_add_executable( TARGET  umdsst_staticbinit.x
                         SOURCES StaticBInit.cc
-                        LIBS    umdsst )
+                        LIBS    umdsst saber)
 
 ecbuild_add_executable( TARGET  umdsst_var.x
                         SOURCES Var.cc

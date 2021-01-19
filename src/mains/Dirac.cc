@@ -9,11 +9,13 @@
 
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
-//  #include "saber/oops/instantiateLocalizationFactory.h"
+// #include "saber/oops/instantiateLocalizationFactory.h"
+#include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  //  saber::instantiateLocalizationFactory<umdsst::Traits>();
+  // saber::instantiateLocalizationFactory<umdsst::Traits>();
+  saber::instantiateCovarFactory<umdsst::Traits>();
   oops::Dirac<umdsst::Traits> dir;
   return run.execute(dir);
 }

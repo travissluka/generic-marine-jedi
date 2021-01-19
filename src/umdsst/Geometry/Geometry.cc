@@ -8,6 +8,7 @@
 #include "umdsst/Geometry/Geometry.h"
 
 #include "eckit/config/Configuration.h"
+#include "atlas/field.h"
 
 #include "atlas/grid.h"
 
@@ -23,6 +24,9 @@ namespace umdsst {
     atlasFunctionSpace_.reset(
       new atlas::functionspace::StructuredColumns(atlasRllGrid,
       atlas::option::halo(0)));
+
+    atlasFieldSet_.reset(new atlas::FieldSet());
+    atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
   }
 
 // ----------------------------------------------------------------------------
@@ -31,6 +35,9 @@ namespace umdsst {
     atlasFunctionSpace_.reset(new
       atlas::functionspace::StructuredColumns(other.atlasFunctionSpace_->grid(),
       atlas::option::halo(0)));
+
+    atlasFieldSet_.reset(new atlas::FieldSet());
+    atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
   }
 
 // ----------------------------------------------------------------------------

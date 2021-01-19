@@ -1,21 +1,37 @@
-background error:
-  covariance model: umdsstCovar
-  horizontal_length_scale: 2.2e6
-  maximum_condition_number: 1.0e6
-  standard_deviation: 1.8e7
-dirac:
-  date: 2010-01-01T12:00:00Z
-  ixdir: [20, 50, 100, 150, 200, 250, 300, 350]
-  iydir: [10, 25, 50,  75,  100, 125, 150, 175]
 geometry:
   grid: S360x180
   domain:
     type: global
     west: -180
+
+analysis variables: &vars [sea_surface_temperature]
+
+background:  # must have
+  state variables: *vars
+  date: 2018-04-15T00:00:00Z
+  filename: Data/19850101_regridded_sst.nc
+
+background error:
+  covariance model: BUMP
+  bump:
+    verbosity: main
+    datadir: Data
+    method: cor
+    load_nicas: 1
+    prefix: Chen
+    mpicom: 2
+    strategy: specific_univariate
+
+dirac:
+  date: 2010-01-01T12:00:00Z
+  ixdir: [20, 50, 100, 150, 200, 250, 300, 350]
+  iydir: [10, 25, 50,  75,  100, 125, 150, 175]
+
 initial condition:
   date: 2010-01-01T12:00:00Z
   filename: Data/19850101_regridded_sst.nc
   state variables: [sea_surface_temperature]
+
 output B:
   datadir: Data
   filename: Data/dirac.x_output.nc

@@ -8,11 +8,13 @@ list( APPEND umdsst_test_input
   testinput/modelaux.yml
   testinput/state.yml
   testinput/dirac.yml
+  testinput/staticbinit.yml
   )
 
 list( APPEND umdsst_test_ref
   testref/hofx_nomodel.ref
   testref/dirac.ref
+  testref/staticbinit.ref
   )
 
 list( APPEND umdsst_test_data
@@ -176,8 +178,8 @@ endfunction()
   umdsst_exe_test( NAME hofx_nomodel
                    EXE  umdsst_hofx_nomodel.x )
 
-# umdsst_exe_test( NAME staticbinit
-#                  EXE  umdsst_staticbinit.x )
+  umdsst_exe_test( NAME staticbinit
+                   EXE  umdsst_staticbinit.x )
 
   umdsst_exe_test( NAME dirac
                    EXE  umdsst_dirac.x

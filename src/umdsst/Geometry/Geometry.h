@@ -53,12 +53,18 @@ namespace umdsst {
         return atlasFunctionSpace_.get();
     }
 
+    // Ligang: 20210111, adjust for JEDI rep updates.
+    atlas::FieldSet* atlasFieldSet() const {
+      return atlasFieldSet_.get();
+    }
+
    private:
     void print(std::ostream &) const;
     const eckit::mpi::Comm & comm_;
 
     std::unique_ptr<atlas::functionspace::StructuredColumns>
       atlasFunctionSpace_;
+    std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace umdsst
 
