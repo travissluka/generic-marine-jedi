@@ -26,6 +26,9 @@ namespace umdsst {
   class State;
 }
 
+namespace eckit {
+  class Configuration;
+}
 namespace oops {
   class InterpolatorUnstructured;
 }
@@ -46,7 +49,9 @@ namespace umdsst {
     static const std::string classname() {return "umdsst::GetValues";}
 
     // constructors, destructors
-    GetValues(const Geometry &, const ufo::Locations & locs);
+    GetValues(const Geometry &,
+              const ufo::Locations & locs,
+              const eckit::Configuration & config);
     virtual ~GetValues();
 
     // fills in geovals for all observations in the timeframe (t1, t2],
