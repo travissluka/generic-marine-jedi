@@ -9,12 +9,14 @@ list( APPEND umdsst_test_input
   testinput/state.yml
   testinput/dirac.yml
   testinput/staticbinit.yml
+  testinput/var.yml
   )
 
 list( APPEND umdsst_test_ref
   testref/hofx_nomodel.ref
   testref/dirac.ref
   testref/staticbinit.ref
+  testref/var.ref
   )
 
 list( APPEND umdsst_test_data
@@ -185,6 +187,6 @@ endfunction()
                    EXE  umdsst_dirac.x
                    TEST_DEPENDS test_umdsst_staticbinit )
 
-# umdsst_exe_test( NAME var
-#                  EXE  umdsst_var.x
-#                  TEST_DEPENDS test_umdsst_staticbinit )
+  umdsst_exe_test( NAME var
+                   EXE  umdsst_var.x
+                   TEST_DEPENDS test_umdsst_staticbinit )

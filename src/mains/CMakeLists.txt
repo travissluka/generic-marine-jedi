@@ -16,4 +16,4 @@ ecbuild_add_executable( TARGET  umdsst_staticbinit.x
 
 ecbuild_add_executable( TARGET  umdsst_var.x
                         SOURCES Var.cc
-                        LIBS    umdsst )
+                        LIBS    umdsst saber)

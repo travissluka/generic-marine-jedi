@@ -1,0 +1,74 @@
+cost function:
+  cost type: 3D-Var
+  window begin: 2018-04-15T00:00:00Z
+  window length: PT24H
+  analysis variables: &vars [sea_surface_temperature]
+
+  geometry:
+    grid: S360x180
+    domain:
+      type: global
+      west: -180
+
+  background:
+    state variables: *vars
+    date: 2018-04-15T12:00:00Z
+    filename: Data/19850101_regridded_sst.nc
+    kelvin: true
+
+  background error:
+    covariance model: BUMP
+    bump:
+      verbosity: main
+      datadir: Data
+      method: cor
+      load_nicas: 1
+      prefix: Chen
+      mpicom: 2
+      strategy: specific_univariate
+
+  observations:
+  - obs error:
+      covariance model: diagonal
+    obs operator:
+      name: Identity
+    obs filters:
+    - filter: Background Check
+      threshold: 8
+    obs space:
+      name: sea_surface_temperature
+      obsdatain: 
+        obsfile: Data/obs_sst.nc
+      simulated variables: [sea_surface_temperature]
+      obsdataout:
+        obsfile: Data/var.output.obs3d.nc
+ 
+
+variational:
+  minimizer:
+    algorithm: DRIPCG
+
+  iterations:
+  - diagnostics:
+      departures: ombg
+    gradient norm reduction: 1.0e-10
+    ninner: 10
+    geometry:
+      grid: S360x180
+      domain:
+        type: global
+        west: -180
+    test: on
+    online diagnostics:
+      write increment: true
+    increment:
+      filename: Data/var.output.increment.nc
+
+
+final:
+  diagnostics:
+    departures: oman
+
+
+output:
+  filename: Data/var.output.final.nc

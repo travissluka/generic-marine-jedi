@@ -234,6 +234,9 @@ namespace umdsst {
       int lat, lon, time = 1;
       std::string filename;
 
+      // Ligang: debug, check conf
+//    oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
+
       // get filename
       if (!conf.get("filename", filename)) {
         util::abor1_cpp("Fields::write(), Get filename failed.",
