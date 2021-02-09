@@ -3,3 +3,6 @@ geometry:
   domain:
     type: global
     west: -180
+
+  landmask:
+    filename: Data/landmask.nc

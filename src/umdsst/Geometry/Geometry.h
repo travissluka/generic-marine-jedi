@@ -42,6 +42,9 @@ namespace umdsst {
     Geometry(const Geometry &);
     ~Geometry();
 
+    // load landmask
+    void loadLandMask(const eckit::Configuration &);
+
     // accessors
     const eckit::mpi::Comm & getComm() const {return comm_;}
 
