@@ -6,6 +6,8 @@ cost function:
 
   geometry:
     grid: S360x180
+    landmask:
+      filename: Data/landmask.nc
     domain:
       type: global
       west: -180
@@ -19,6 +21,8 @@ cost function:
   background error:
     covariance model: BUMP
     bump:
+      mask_check: 1
+      network: 1
       verbosity: main
       datadir: Data
       method: cor
@@ -55,6 +59,8 @@ variational:
     ninner: 10
     geometry:
       grid: S360x180
+      landmask:
+        filename: Data/landmask.nc
       domain:
         type: global
         west: -180

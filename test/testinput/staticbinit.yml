@@ -1,5 +1,7 @@
 geometry:
   grid: S360x180
+  landmask:
+    filename: Data/landmask.nc
   domain:
     type: global
     west: -180
@@ -14,6 +16,8 @@ background:  # must have
 background error:
   covariance model: BUMP
   bump:
+    mask_check: 1
+    network: 1
     verbosity: main
     datadir: Data
     forced_radii: 1
