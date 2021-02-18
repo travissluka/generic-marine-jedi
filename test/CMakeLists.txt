@@ -31,6 +31,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
 
 # link the input files for the tests
 foreach(FILENAME
@@ -54,7 +55,7 @@ function(umdsst_exe_test)
   # parse the passed arguments
   set(prefix     ARG)
   set(novals     NOCOMPARE NOTRAPFPE)
-  set(singlevals NAME EXE CFG)
+  set(singlevals NAME EXE CFG CLEAN)
   set(multivals  TEST_DEPENDS TOL)
   cmake_parse_arguments(${prefix}
                         "${novals}" "${singlevals}" "${multivals}"
@@ -101,6 +102,7 @@ function(umdsst_exe_test)
                             COMPARE_TOL_I=${TOL_I}
                             MPI_CMD=${MPI_CMD}
                             SKIP_COMPARE=${ARG_NOCOMPARE}
+                            CLEAN_FILES=${ARG_CLEAN}
                     DEPENDS ${ARGE_EXE}
                     TEST_DEPENDS ${ARG_TEST_DEPENDS})
 endfunction()
@@ -157,7 +159,8 @@ endfunction()
      SOURCES executables/TestErrorCovariance.cc
      ARGS    testinput/errorcovariance.yml
      MPI     ${MPI_PES}
-     LIBS    umdsst )
+     LIBS    umdsst
+     TEST_DEPENDS test_umdsst_staticbinit)
 
 #  ecbuild_add_test(
 #    TARGET  test_umdsst_modelauxcovariance
@@ -182,7 +185,8 @@ endfunction()
                    EXE  umdsst_hofx_nomodel.x )
 
   umdsst_exe_test( NAME staticbinit
-                   EXE  umdsst_staticbinit.x )
+                   EXE  umdsst_staticbinit.x
+                   CLEAN Data/bump/* )
 
   umdsst_exe_test( NAME dirac
                    EXE  umdsst_dirac.x

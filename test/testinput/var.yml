@@ -24,10 +24,10 @@ cost function:
       mask_check: 1
       network: 1
       verbosity: main
-      datadir: Data
+      datadir: Data/bump
       method: cor
       load_nicas: 1
-      prefix: Chen
+      prefix: bump_sst
       mpicom: 2
       strategy: specific_univariate
 
@@ -41,12 +41,12 @@ cost function:
       threshold: 8
     obs space:
       name: sea_surface_temperature
-      obsdatain: 
+      obsdatain:
         obsfile: Data/obs_sst.nc
       simulated variables: [sea_surface_temperature]
       obsdataout:
         obsfile: Data/var.output.obs3d.nc
- 
+
 
 variational:
   minimizer:

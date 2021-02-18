@@ -14,21 +14,18 @@ background:  # must have
   filename: Data/19850101_regridded_sst.nc
 
 background error:
-  covariance model: BUMP
+  covariance model: umdsstCovar
   bump:
     mask_check: 1
     network: 1
     verbosity: main
-    datadir: Data
-    forced_radii: 1
+    datadir: Data/bump
     method: cor
     new_nicas: 1
     ntry: 3
-    prefix: Chen
+    prefix: bump_sst
     resol: 6.0
     mpicom: 2
-    rh: 
-      sea_surface_temperature: [3000.0e3]
-    rv:
-      sea_surface_temperature: [1]
     strategy: specific_univariate
+  correlation lengths:
+    fixed: 3.0e6

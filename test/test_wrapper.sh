@@ -3,6 +3,17 @@
 # simple script to combine into a single ctest the 1) running of executable and
 # 2)comparing its answers to reference answers.
 
+# optionally delete existing files
+if [[ ${#CLEAN_FILES} -gt 0 ]]; then
+    echo ""
+    echo "==============================================================================="
+    echo "Deleting files"
+    echo "==============================================================================="
+    for f in ${CLEAN_FILES}; do
+        echo Deleting: $f
+    done
+fi
+
 # run the executable
 echo ""
 echo "==============================================================================="

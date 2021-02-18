@@ -50,6 +50,8 @@ namespace umdsst {
 
    private:
     void print(std::ostream &) const;
+
+    int keyBump_ = 0;
   };
 
 }  // namespace umdsst

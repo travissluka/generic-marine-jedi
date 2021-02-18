@@ -3,10 +3,13 @@ geometry:
   domain:
     type: global
     west: -180
+  landmask:
+    filename: Data/landmask.nc
+
 
 covariance test:
   tolerance: 1e-12
-  testinverse: true  # false
+  testinverse: false
 
 analysis variables: &vars [sea_surface_temperature]
 
@@ -16,3 +19,13 @@ background:
 
 background error:
   covariance model: umdsstCovar
+  bump:
+    mask_check: 1
+    network: 1
+    verbosity: main
+    datadir: Data/bump
+    method: cor
+    load_nicas: 1
+    prefix: bump_sst
+    mpicom: 2
+    strategy: specific_univariate

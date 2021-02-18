@@ -19,10 +19,10 @@ background error:
     mask_check: 1
     network: 1
     verbosity: main
-    datadir: Data
+    datadir: Data/bump
     method: cor
     load_nicas: 1
-    prefix: Chen
+    prefix: bump_sst
     mpicom: 2
     strategy: specific_univariate
 
