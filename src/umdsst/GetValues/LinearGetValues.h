@@ -21,6 +21,9 @@
 #include "ufo/Locations.h"
 
 // forward declarations
+namespace eckit {
+  class Configuration;
+}
 namespace oops {
   class InterpolatorUnstructured;
 }
@@ -45,7 +48,8 @@ namespace umdsst {
     static const std::string classname() {return "umdsst::LinearGetValues";}
 
     // constructors, destructors
-    LinearGetValues(const Geometry &, const ufo::Locations &);
+    LinearGetValues(const Geometry &, const ufo::Locations &,
+                    const eckit::Configuration &);
     virtual ~LinearGetValues();
 
     // Forward and backward interpolation

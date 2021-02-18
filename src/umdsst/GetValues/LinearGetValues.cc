@@ -27,7 +27,8 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   LinearGetValues::LinearGetValues(const Geometry & geom,
-                                   const ufo::Locations & locs)
+                                   const ufo::Locations & locs,
+                                   const eckit::Configuration & config)
     : geom_( new Geometry(geom)), locs_(locs) {
     interpolator_.reset( new oops::InterpolatorUnstructured(
                                eckit::LocalConfiguration(),
