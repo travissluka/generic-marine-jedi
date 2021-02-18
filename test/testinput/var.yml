@@ -30,6 +30,11 @@ cost function:
       prefix: bump_sst
       mpicom: 2
       strategy: specific_univariate
+    variable changes:
+    - variable change: umdsstStdDev
+      input variables: *vars
+      output variables: *vars
+      fixed: 1.0
 
   observations:
   - obs error:

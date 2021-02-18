@@ -5,6 +5,7 @@ list( APPEND umdsst_test_input
   testinput/hofx_nomodel.yml
   testinput/increment.yml
   testinput/lineargetvalues.yml
+  testinput/linearvarchange_stddev.yml
   testinput/modelaux.yml
   testinput/state.yml
   testinput/dirac.yml
@@ -153,6 +154,13 @@ endfunction()
      ARGS    testinput/lineargetvalues.yml
      MPI     ${MPI_PES}
      LIBS    umdsst )
+
+   ecbuild_add_test(
+    TARGET  test_umdsst_linearvarchange_stddev
+    SOURCES executables/TestLinearVariableChange.cc
+    ARGS    testinput/linearvarchange_stddev.yml
+    MPI     ${MPI_PES}
+    LIBS    umdsst )
 
    ecbuild_add_test(
      TARGET  test_umdsst_errorcovariance

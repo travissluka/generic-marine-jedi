@@ -59,6 +59,7 @@ namespace umdsst {
     void ones();
     void random();
     void schur_product_with(const Increment &);
+    void schur_product_with_inv(const Increment &);
     void zero();
     void zero(const util::DateTime &);
 

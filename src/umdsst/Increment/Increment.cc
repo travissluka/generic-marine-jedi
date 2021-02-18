@@ -177,6 +177,16 @@ namespace umdsst {
 
 // ----------------------------------------------------------------------------
 
+  void Increment::schur_product_with_inv(const Increment &rhs ) {
+    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
+
+    const int size = geom_->atlasFunctionSpace()->size();
+    for (int i = 0; i < size; i++)
+      fd(i, 0) *= 1.0 / fd_rhs(i, 0);
+  }
+// ----------------------------------------------------------------------------
+
   void Increment::zero() {
     // Need this wrapper because the overridden zero(time) would otherwise
     // interfere
