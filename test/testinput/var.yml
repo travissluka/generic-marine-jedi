@@ -42,8 +42,10 @@ cost function:
     obs operator:
       name: Identity
     obs filters:
-    - filter: Background Check
-      threshold: 8
+    - filter: Domain Check
+      where:
+      - variable: {name: sea_area_fraction@GeoVaLs}
+        minvalue: 1.0
     obs space:
       name: sea_surface_temperature
       obsdatain:

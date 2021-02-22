@@ -6,6 +6,8 @@
  */
 
 
+#include <vector>
+
 #include "umdsst/GetValues/LinearGetValues.h"
 #include "umdsst/State/State.h"
 #include "umdsst/Geometry/Geometry.h"
@@ -69,19 +71,19 @@ namespace umdsst {
                                       const util::DateTime & t2,
                                       ufo::GeoVaLs & geovals) const {
     oops::Variables vars = geovals.getVars();
+    std::vector<atlas::Field> fields(vars.size());
     for (size_t i = 0; i < vars.size(); i++) {
       // expect only sst for now
       if (vars[i] != "sea_surface_temperature")
         util::abor1_cpp("LinearGetValues::fillGeoVaLsTL,unkown state variable");
 
-      atlas::Field fout = locs_.atlasFunctionSpace()->createField<double>(
-                                                 atlas::option::levels(1));
+      fields[i] = locs_.atlasFunctionSpace()->createField<double>(
+                                         atlas::option::levels(1));
 
       interpolator_->apply(
-        inc.atlasFieldSet()->field("sea_surface_temperature"), fout);
-
-      GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fout);
+        inc.atlasFieldSet()->field("sea_surface_temperature"), fields[i]);
     }
+    GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fields);
   }
 
 // ----------------------------------------------------------------------------
@@ -91,19 +93,19 @@ namespace umdsst {
                                       const util::DateTime & t2,
                                       ufo::GeoVaLs & geovals) {
     oops::Variables vars = geovals.getVars();
+    std::vector<atlas::Field> fields(vars.size());
     for (size_t i = 0; i < vars.size(); i++) {
       // expect only sst for now
       if (vars[i] != "sea_surface_temperature")
         util::abor1_cpp("LinearGetValues::setTrajectory,unkown state variable");
 
-      atlas::Field fout = locs_.atlasFunctionSpace()->createField<double>(
-                                                 atlas::option::levels(1));
+      fields[i] = locs_.atlasFunctionSpace()->createField<double>(
+                                         atlas::option::levels(1));
 
       interpolator_->apply(
-        state.atlasFieldSet()->field("sea_surface_temperature"), fout);
-
-      GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fout);
+        state.atlasFieldSet()->field("sea_surface_temperature"), fields[i]);
     }
+    GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fields);
   }
 
 // ----------------------------------------------------------------------------

@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <vector>
+
 #include "umdsst/Geometry/Geometry.h"
 #include "umdsst/GetValues/GetValues.h"
 #include "umdsst/GetValues/GeoVaLsWrapper.h"
@@ -15,6 +17,7 @@
 #include "oops/generic/InterpolatorUnstructured.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
@@ -44,19 +47,22 @@ namespace umdsst {
                               const util::DateTime & t2,
                               ufo::GeoVaLs & geovals) const {
     oops::Variables vars = geovals.getVars();
+    std::vector<atlas::Field> fields(vars.size());
+
     for (size_t i = 0; i < vars.size(); i++) {
-      // expect only sst for now
-      if (vars[i] != "sea_surface_temperature")
-        util::abor1_cpp("GetValues::fillGeoVaLs, unkown state variable");
-
-      atlas::Field fout = locs_.atlasFunctionSpace()->createField<double>(
+      fields[i] = locs_.atlasFunctionSpace()->createField<double>(
                                                  atlas::option::levels(1));
-      interpolator_->apply(
-        state.atlasFieldSet()->field("sea_surface_temperature"),
-        fout);
 
-      GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fout);
+      if (vars[i] == "sea_surface_temperature") {
+        interpolator_->apply(
+          state.atlasFieldSet()->field("sea_surface_temperature"), fields[i]);
+      } else if (vars[i] == "sea_area_fraction") {
+        interpolator_->apply(
+          geom_->atlasFieldSet()->field("ggmask"), fields[i]);  // not gmask
+      }
     }
+
+    GeoVaLsWrapper(geovals, locs_.locs()).fill(t1, t2, fields);
   }
 
 // ----------------------------------------------------------------------------
