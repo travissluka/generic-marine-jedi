@@ -11,6 +11,7 @@ if [[ ${#CLEAN_FILES} -gt 0 ]]; then
     echo "==============================================================================="
     for f in ${CLEAN_FILES}; do
         echo Deleting: $f
+        rm -f $f
     done
 fi
 
