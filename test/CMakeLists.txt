@@ -2,7 +2,7 @@ list( APPEND umdsst_test_input
   testinput/errorcovariance.yml
   testinput/geometry.yml
   testinput/getvalues.yml
-  testinput/hofx_nomodel.yml
+  testinput/hofx3d.yml
   testinput/increment.yml
   testinput/lineargetvalues.yml
   testinput/linearvarchange_stddev.yml
@@ -14,7 +14,7 @@ list( APPEND umdsst_test_input
   )
 
 list( APPEND umdsst_test_ref
-  testref/hofx_nomodel.ref
+  testref/hofx3d.ref
   testref/dirac.ref
   testref/staticbinit.ref
   testref/var.ref
@@ -189,8 +189,8 @@ endfunction()
 # Test of executables
 #================================================================================
 
-  umdsst_exe_test( NAME hofx_nomodel
-                   EXE  umdsst_hofx_nomodel.x )
+  umdsst_exe_test( NAME hofx3d
+                   EXE  umdsst_hofx3d.x )
 
   umdsst_exe_test( NAME staticbinit
                    EXE  umdsst_staticbinit.x
