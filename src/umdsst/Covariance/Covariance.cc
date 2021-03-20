@@ -74,8 +74,11 @@ namespace umdsst {
       conf.get("correlation lengths", corrConf);
       if ( corrConf.has("fixed") ) {
         // single global value for correlation length given
+        // note: BUMP expects the length as a Gaspari-Cohn cutoff length,
+        //   but we probably think of it as a Gaussian 1 sigma, so convert.
         double val;
         corrConf.get("fixed", val);
+        val*=3.57;  // gaussian to GC
         param_view.assign(val);
       } else {
         util::abor1_cpp("Covariance::Covariance() no correlation length "

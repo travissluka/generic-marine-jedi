@@ -28,4 +28,4 @@ background error:
     mpicom: 2
     strategy: specific_univariate
   correlation lengths:
-    fixed: 3.0e6
+    fixed: 840.0e3
