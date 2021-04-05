@@ -12,8 +12,6 @@
 
 #include "umdsst/Fields/Fields.h"
 
-#include "oops/base/GeneralizedDepartures.h"
-
 // forward declarations
 namespace oops {
   class Variables;
@@ -32,8 +30,7 @@ namespace umdsst {
 namespace umdsst {
 
   // Increment class
-  class Increment : public oops::GeneralizedDepartures,
-                    private util::ObjectCounter<Increment>,
+  class Increment : private util::ObjectCounter<Increment>,
                     public umdsst::Fields {
    public:
     static const std::string classname() {return "umdsst::Increment";}
