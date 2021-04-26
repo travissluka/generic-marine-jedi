@@ -1,10 +1,11 @@
 geometry:
-  grid: S360x180
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
   landmask:
     filename: Data/landmask.nc
-  domain:
-    type: global
-    west: -180
 
 analysis variables: &vars [sea_surface_temperature]  # must have
 

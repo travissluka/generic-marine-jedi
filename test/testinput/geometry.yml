@@ -1,8 +1,9 @@
 geometry:
-  grid: S360x180
-  domain:
-    type: global
-    west: -180
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
 
   landmask:
     filename: Data/landmask.nc

@@ -1,11 +1,15 @@
 geometry:
-  grid: S360x180
-  domain:
-    type: global
-    west: -180
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: Data/landmask.nc
+
 
 state test:
-  norm file: 17.409813550061454  # 286.53398478426465
+  norm file: 17.618557808088323
   tolerance: 1e-6
   date: &date 1985-01-01T12:00:00Z
   statefile:
@@ -13,7 +17,7 @@ state test:
     filename: Data/19850101_regridded_sst.nc
     kelvin: true
     state variables: &state_vars [sea_surface_temperature]
-  statefileout: 
+  statefileout:
     datadir: ./Data
     exp: out
     type: fc

@@ -199,24 +199,35 @@ namespace umdsst {
         for (int i = 0; i < lon; i++)
           if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
             sstData[j][i] = missing_;
+            // TODO(someone) missing values that aren't a part of the landmask
+            // should be filled in instead
           } else {
             // Kelvin to Celsius which JEDI use internally, will check if the
             // units is Kelvin or Celsius in the future
             if (isKelvin)
               sstData[j][i] -= 273.15;
-            else
-              continue;  // do nothing, for readability
           }
 
       // float to double
       int idx = 0;
-      for (int j = 0; j < lat; j++)
+      for (int j = lat-1; j >= 0; j--)
         for (int i = 0; i < lon; i++)
           fd(idx++, 0) = static_cast<double>(sstData[j][i]);
     }
 
     // scatter to the PEs
     geom_->atlasFunctionSpace()->scatter(globalSst, atlasFieldSet_->field(0));
+
+    // apply mask from read in landmask
+    if ( (*geom_->atlasFieldSet()).has_field("gmask") ) {
+       atlas::Field mask_field = (*geom_->atlasFieldSet())["gmask"];
+       auto mask = make_view<int, 2>(mask_field);
+       auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
+       for (int i = 0; i < mask.size(); i++) {
+         if (mask(i, 0) == 0)
+           fd(i, 0) = missing_;
+       }
+     }
   }
 
 // ----------------------------------------------------------------------------
@@ -290,7 +301,7 @@ namespace umdsst {
       float sstData[time][lat][lon];
       bool isKelvin = conf.getBool("kelvin", false);
       int idx = 0;
-      for (int j = 0; j < lat; j++)
+      for (int j = lat-1; j >= 0; j--)
         for (int i = 0; i < lon; i++) {
           if (fd(idx, 0) == missing_) {
             sstData[0][j][i] = fillvalue;

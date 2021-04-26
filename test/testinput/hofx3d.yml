@@ -2,10 +2,13 @@ window length: P1D
 window begin: 2018-04-15T00:00:00Z
 
 geometry:
-  grid: S360x180
-  domain:
-    type: global
-    west: -180
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: Data/landmask.nc
 
 state:
   date: 2018-04-15T12:00:00Z

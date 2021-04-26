@@ -4,13 +4,14 @@ cost function:
   window length: PT24H
   analysis variables: &vars [sea_surface_temperature]
 
-  geometry:
-    grid: S360x180
+  geometry: &geometry
+    grid:
+      name: S360x180
+      domain:
+        type: global
+        west: -180
     landmask:
       filename: Data/landmask.nc
-    domain:
-      type: global
-      west: -180
 
   background:
     state variables: *vars
@@ -64,13 +65,7 @@ variational:
       departures: ombg
     gradient norm reduction: 1.0e-10
     ninner: 10
-    geometry:
-      grid: S360x180
-      landmask:
-        filename: Data/landmask.nc
-      domain:
-        type: global
-        west: -180
+    geometry: *geometry
     test: on
     online diagnostics:
       write increment: true
