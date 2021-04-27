@@ -1,0 +1,34 @@
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: landmask.nc
+
+analysis variables: &vars [sea_surface_temperature]
+
+background:
+  state variables: *vars
+  date: 2018-04-15T00:00:00Z # date doesn't matter here, just pick something
+  filename: bkg.nc
+
+background error:
+  covariance model: umdsstCovar
+  bump:
+    verbosity: main
+    datadir: bump
+    prefix: bump_sst
+    method: cor
+    strategy: specific_univariate
+    mask_check: 1
+    network: 1
+    new_nicas: 1
+    ntry: 3
+    resol: 6.0
+    mpicom: 2
+    nc1max: 40000
+
+  correlation lengths:
+    fixed: 200.0e3

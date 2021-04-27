@@ -1,0 +1,92 @@
+cost function:
+  cost type: 3D-Var
+  window begin: __DA_WINDOW_START__
+  window length: PT24H
+  analysis variables: &vars [sea_surface_temperature]
+
+  geometry: &geometry
+    grid:
+      name: S360x180
+      domain:
+        type: global
+        west: -180
+    landmask:
+      filename: landmask.nc
+
+  background:
+    state variables: *vars
+    date: __ANA_DATE__
+    filename: bkg.nc
+    kelvin: true
+
+  background error:
+    covariance model: BUMP
+    bump:
+      verbosity: main
+      datadir: bump
+      prefix: bump_sst
+      method: cor
+      strategy: specific_univariate
+      mask_check: 1
+      network: 1
+      load_nicas: 1
+      mpicom: 2
+
+    variable changes:
+    - variable change: umdsstStdDev
+      input variables: *vars
+      output variables: *vars
+      fixed: 1.0
+
+  observations:
+  - obs error:
+      covariance model: diagonal
+    obs operator:
+      name: Identity
+    obs space:
+      name: sea_surface_temperature
+      obsdatain:
+        obsfile: obs_ioda.nc
+      simulated variables: [sea_surface_temperature]
+      obsdataout:
+        obsfile: obs_out/obs.nc
+    obs filters:
+    - filter: PreQC  # only keep obs with the best 2 qc levels from original data file
+      maxvalue: 1
+    - filter: BlackList  # assign initial error value
+      action:
+        name: assign error
+        error parameter: 1.0
+    - filter: Domain Check  # land check
+      where:
+      - variable: {name: sea_area_fraction@GeoVaLs}
+        minvalue: 1.0
+    - filter: Background Check
+      absolute threshold: 5.0
+    - filter: Bounds Check
+      minvalue: 0.0 # ignore obs that are close to freezing, for now
+      maxvalue: 40.0
+
+variational:
+  minimizer:
+    algorithm: DRIPCG
+
+  iterations:
+  - diagnostics:
+      departures: ombg
+    gradient norm reduction: 1.0e-3
+    ninner: 200
+    geometry: *geometry
+    test: on
+    online diagnostics:
+      write increment: true
+    increment:
+      filename: inc.nc
+
+final:
+  diagnostics:
+    departures: oman
+
+output:
+  filename: ana.nc
+  kelvin: true
