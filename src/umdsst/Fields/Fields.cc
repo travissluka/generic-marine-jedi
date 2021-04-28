@@ -35,14 +35,10 @@ namespace umdsst {
       time_(vt), vars_(vars) {
     // the constructor that gets called by everything (all State
     //  and Increment constructors ultimately end up here)
-    if (vars_.size() != 1) {
-      util::abor1_cpp("Fields::Fields(), vars_.size() != 1",
-                       __FILE__, __LINE__);
-    }
 
     atlasFieldSet_.reset(new atlas::FieldSet());
-    for (int i = 0; i < vars_.size(); i++) {
-      std::string var = vars_[i];
+    for (int v = 0; v < vars_.size(); v++) {
+      std::string var = vars_[v];
       atlas::Field fld = geom_->atlasFunctionSpace()->createField<double>(
                          atlas::option::levels(1) |
                          atlas::option::name(var));
@@ -64,9 +60,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
   Fields & Fields::operator =(const Fields & other) {
     const int size = geom_->atlasFunctionSpace()->size();
-    for (int i = 0; i < vars_.size(); i++) {
-      auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
-      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(0));
+
+    for (int v = 0; v < vars_.size(); v++) {
+      std::string name = vars_[v];
+      auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
+      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
       for (int j = 0; j < size; j++)
         fd(j, 0) = fd_other(j, 0);
     }
@@ -77,16 +75,19 @@ namespace umdsst {
 
   Fields & Fields::operator+=(const Fields &other) {
     const int size = geom_->atlasFunctionSpace()->size();
-    auto fd       = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(0));
 
-    for (int j = 0; j < size; j++) {
-      if (fd(j, 0) == missing_ || fd_other(j, 0) == other.missing_)
-        fd(j, 0) = missing_;
-      else
-        fd(j, 0) += fd_other(j, 0);
+    for (int v = 0; v < vars_.size(); v++) {
+      std::string name = vars_[v];
+      auto fd       = make_view<double, 2>(atlasFieldSet_->field(name));
+      auto fd_other = make_view<double, 2>(other.atlasFieldSet_->field(name));
+
+      for (int j = 0; j < size; j++) {
+        if (fd(j, 0) == missing_ || fd_other(j, 0) == other.missing_)
+          fd(j, 0) = missing_;
+        else
+          fd(j, 0) += fd_other(j, 0);
+      }
     }
-
     return *this;
   }
 
@@ -94,14 +95,18 @@ namespace umdsst {
 
   void Fields::accumul(const double &zz, const Fields &rhs) {
     const size_t size = geom_->atlasFunctionSpace()->size();
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-    auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(0));
 
-    for (size_t i = 0; i < size; i++) {
-      if (fd(i, 0) == missing_ || fd_rhs(i, 0) == missing_)
-        fd(i, 0) = missing_;
-      else
-        fd(i, 0) +=  zz*fd_rhs(i, 0);
+    for (int v = 0; v < vars_.size(); v++) {
+      std::string name = vars_[v];
+      auto fd = make_view<double, 2>(atlasFieldSet_->field(name));
+      auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet()->field(name));
+
+      for (size_t i = 0; i < size; i++) {
+        if (fd(i, 0) == missing_ || fd_rhs(i, 0) == missing_)
+          fd(i, 0) = missing_;
+        else
+          fd(i, 0) +=  zz*fd_rhs(i, 0);
+      }
     }
   }
 
@@ -109,14 +114,17 @@ namespace umdsst {
 
   double Fields::norm() const {
     const int size = geom_->atlasFunctionSpace()->size();
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
-
     int nValid = 0;
     double norm = 0.0, s = 0.0;
-    for (int i = 0; i < size; i++) {
-      if (fd(i, 0) != missing_) {
-        nValid += 1;
-        s += fd(i, 0)*fd(i, 0);
+
+    for (int v = 0; v < vars_.size(); v++) {
+      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+
+      for (int i = 0; i < size; i++) {
+        if (fd(i, 0) != missing_) {
+          nValid += 1;
+          s += fd(i, 0)*fd(i, 0);
+        }
       }
     }
 
@@ -135,11 +143,11 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Fields::zero() {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
-
-    for (int i = 0; i < size; i++)
-        fd(i, 0) = 0.0;
+    for (int v = 0; v < vars_.size(); v++) {
+      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+      fd.assign(0.0);
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -216,7 +224,8 @@ namespace umdsst {
     }
 
     // scatter to the PEs
-    geom_->atlasFunctionSpace()->scatter(globalSst, atlasFieldSet_->field(0));
+    geom_->atlasFunctionSpace()->scatter(
+      globalSst, atlasFieldSet_->field("sea_surface_temperature"));
 
     // apply mask from read in landmask
     if ( (*geom_->atlasFieldSet()).has_field("gmask") ) {
@@ -237,7 +246,8 @@ namespace umdsst {
     atlas::Field globalSst = geom_->atlasFunctionSpace()->createField<double>(
         atlas::option::levels(1) |
         atlas::option::global());
-    geom_->atlasFunctionSpace()->gather(atlasFieldSet_->field(0), globalSst);
+    geom_->atlasFunctionSpace()->gather(
+      atlasFieldSet_->field("sea_surface_temperature"), globalSst);
 
     // The following code block should execute on the root PE only
     // Ligang: How do you do the above? Use the following if statement.
@@ -338,7 +348,9 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Fields::setAtlas(atlas::FieldSet * fs) const {
-    fs->add((*atlasFieldSet_)[0]);
+    for (int v = 0; v < vars_.size(); v++) {
+      fs->add((*atlasFieldSet_)[v]);
+    }
   }
 
 // ----------------------------------------------------------------------------
@@ -361,7 +373,7 @@ namespace umdsst {
       }
       auto fd_to = make_view<double, 2>(fs_to->field(var_name));
 
-      auto fd    = make_view<double, 2>(atlasFieldSet_->field(i));
+      auto fd    = make_view<double, 2>(atlasFieldSet_->field(var_name));
       for (int j = 0; j < size; j++)
         fd_to(j, 0) = fd(j, 0);
     }
@@ -375,8 +387,8 @@ namespace umdsst {
     for (int i = 0; i < vars_.size(); i++) {
       std::string var_name = vars_[i];
 
-      auto fd      = make_view<double, 2>(atlasFieldSet_->field(i));
-      auto fd_from = make_view<double, 2>(fs_from->field(i));
+      auto fd      = make_view<double, 2>(atlasFieldSet_->field(var_name));
+      auto fd_from = make_view<double, 2>(fs_from->field(var_name));
       for (int j = 0; j < size; j++)
         fd(j, 0) = fd_from(j, 0);
     }
@@ -385,39 +397,40 @@ namespace umdsst {
 // ----------------------------------------------------------------------------
 
   void Fields::print(std::ostream & os) const {
-    auto fd = make_view<double, 2>(atlasFieldSet_->field(0));
     const int size = geom_->atlasFunctionSpace()->size();
-    double mean = 0.0, sum = 0.0,
-           min = std::numeric_limits<double>::max(),
-           max = std::numeric_limits<double>::min();
-    int nValid = 0;
+    for (int v = 0; v < vars_.size(); v++) {
+      auto fd = make_view<double, 2>(atlasFieldSet_->field(v));
+      double mean = 0.0, sum = 0.0,
+            min = std::numeric_limits<double>::max(),
+            max = std::numeric_limits<double>::min();
+      int nValid = 0;
 
-    for (int i = 0; i < size; i++)
-      if (fd(i, 0) != missing_) {
-        if (fd(i, 0) < min) min = fd(i, 0);
-        if (fd(i, 0) > max) max = fd(i, 0);
+      for (int i = 0; i < size; i++)
+        if (fd(i, 0) != missing_) {
+          if (fd(i, 0) < min) min = fd(i, 0);
+          if (fd(i, 0) > max) max = fd(i, 0);
 
-        sum += fd(i, 0);
-        nValid++;
+          sum += fd(i, 0);
+          nValid++;
+        }
+
+      // gather results across PEs
+      oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
+      oops::mpi::world().allReduceInPlace(sum, eckit::mpi::Operation::SUM);
+      oops::mpi::world().allReduceInPlace(min, eckit::mpi::Operation::MIN);
+      oops::mpi::world().allReduceInPlace(max, eckit::mpi::Operation::MAX);
+
+      if (nValid == 0) {
+        mean = 0.0;
+        oops::Log::debug() << "Field::print(), nValid == 0!" << std::endl;
+      } else {
+        mean = sum / (1.0*nValid);
       }
 
-    // gather results across PEs
-    oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
-    oops::mpi::world().allReduceInPlace(sum, eckit::mpi::Operation::SUM);
-    oops::mpi::world().allReduceInPlace(min, eckit::mpi::Operation::MIN);
-    oops::mpi::world().allReduceInPlace(max, eckit::mpi::Operation::MAX);
-
-    if (nValid == 0) {
-      mean = 0.0;
-      oops::Log::debug() << "Field::print(), nValid == 0!" << std::endl;
-    } else {
-      mean = sum / (1.0*nValid);
+      os << "min = " << min << ", max = " << max << ", mean = " << mean
+        << std::endl;
     }
-
-    os << "min = " << min << ", max = " << max << ", mean = " << mean
-       << std::endl;
   }
-
 // ----------------------------------------------------------------------------
 
 }  // namespace umdsst

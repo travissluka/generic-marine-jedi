@@ -1,3 +1,4 @@
 umdsst_target_sources(
-    VariableChange.cc
+    Model2GeoVaLs.cc
+    Model2GeoVaLs.h
 )

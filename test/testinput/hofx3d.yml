@@ -24,3 +24,8 @@ observations:
       simulated variables: [sea_surface_temperature]
     obs operator:
       name: Identity
+    obs filters:
+    - filter: Domain Check
+      where:
+      - variable: {name: sea_area_fraction@GeoVaLs}
+        minvalue: 1.0

@@ -39,25 +39,12 @@ namespace umdsst {
     atlasFieldSet_->add(atlasFunctionSpace_->lonlat());
 
     if (conf.has("landmask.filename")) {
-      oops::Log::info() << "Geometry::Geometry(), before loading landmask."
+      oops::Log::debug() << "Geometry::Geometry(), before loading landmask."
                         << std::endl;
       loadLandMask(conf);
 
-
-      oops::Log::info() << "Geometry::Geometry(), after loading landmask."
+      oops::Log::debug() << "Geometry::Geometry(), after loading landmask."
                         << std::endl;
-
-      atlas::Field ggmask = atlasFunctionSpace_->createField<double>(
-          atlas::option::levels(1) | atlas::option::name("ggmask"));
-      auto fd_ggmask = make_view<double, 2>(ggmask);
-
-      auto fd_gmask = make_view<int, 2>(atlasFieldSet_->field("gmask"));
-
-      for (int i = 0; i < atlasFunctionSpace_->size(); i++) {
-        fd_ggmask(i, 0) = static_cast<double>(fd_gmask(i, 0));
-      }
-
-      atlasFieldSet_->add(ggmask);
     }
 
     // add Field area

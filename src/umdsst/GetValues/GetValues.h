@@ -24,6 +24,7 @@
 namespace umdsst {
   class Geometry;
   class State;
+  class Model2GeoVaLs;
 }
 
 namespace eckit {
@@ -63,6 +64,7 @@ namespace umdsst {
    private:
     void print(std::ostream &) const;
 
+    std::unique_ptr<Model2GeoVaLs> model2geovals_;
     std::unique_ptr<oops::InterpolatorUnstructured> interpolator_;
     std::shared_ptr<const Geometry> geom_;
     LocationsWrapper locs_;
