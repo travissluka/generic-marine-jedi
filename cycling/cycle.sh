@@ -30,6 +30,8 @@ IC_FILE=$UMDSST_SRC_DIR/test/Data/19850101_regridded_sst.nc
 # land mask file
 LANDMASK_FILE=$UMDSST_SRC_DIR/test/Data/landmask.nc
 
+ROSSBYRADIUS_FILE=$UMDSST_SRC_DIR/test/Data/rossby_radius.dat
+
 # temporary working files, that are deleted after each cycle is finished
 SCRATCH_DIR=$EXP_DIR/SCRATCH
 
@@ -92,6 +94,7 @@ while true; do
     mkdir -p $SCRATCH_DIR_CYCLE
     cd $SCRATCH_DIR_CYCLE
     ln -s $LANDMASK_FILE landmask.nc
+    ln -s $ROSSBYRADIUS_FILE rossby_radius.dat
 
     # link in the most recent background state
     if [[ "$init" == 1 ]]; then

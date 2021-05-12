@@ -6,6 +6,7 @@ geometry:
       west: -180
   landmask:
     filename: Data/landmask.nc
+  rossby radius file: Data/rossby_radius.dat
 
 analysis variables: &vars [sea_surface_temperature]  # must have
 
@@ -28,5 +29,9 @@ background error:
     resol: 6.0
     mpicom: 2
     strategy: specific_univariate
+    nc1max: 100000
   correlation lengths:
-    fixed: 840.0e3
+    base value: 500.0e3
+    rossby mult: 1.0
+    min grid mult: 5.0
+    #min value: 200.0e3

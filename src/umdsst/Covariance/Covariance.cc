@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <algorithm>
+#include <limits>
 #include <ostream>
 #include <string>
 
@@ -72,18 +74,39 @@ namespace umdsst {
     if (conf.has("correlation lengths")) {
       eckit::LocalConfiguration corrConf;
       conf.get("correlation lengths", corrConf);
-      if ( corrConf.has("fixed") ) {
-        // single global value for correlation length given
-        // note: BUMP expects the length as a Gaspari-Cohn cutoff length,
-        //   but we probably think of it as a Gaussian 1 sigma, so convert.
-        double val;
-        corrConf.get("fixed", val);
-        val*=3.57;  // gaussian to GC
-        param_view.assign(val);
-      } else {
-        util::abor1_cpp("Covariance::Covariance() no correlation length "
-                        "method specified", __FILE__, __LINE__);
+
+      // rh is calculated as follows :
+      // 1) rh = "base value" + rossby_radius * "rossby mult"
+      // 2) minimum value of "min grid mult" * grid_size is imposed
+      // 3) min/max are imposed based on "min value" and "max value"
+      // 4) converted from a gaussian sigma to Gaspari-Cohn cutoff distance
+      double baseValue = corrConf.getDouble("base value", 0.0);
+      double rossbyMult = corrConf.getDouble("rossby mult", 0.0);
+      double minGridMult = corrConf.getDouble("min grid mult", 0.0);
+      double minValue = corrConf.getDouble("min value", 0.0);
+      double maxValue = corrConf.getDouble("max value",
+                                       std::numeric_limits<double>::max());
+
+      auto rossbyRadius = atlas::array::make_view<double, 2>(
+        geom.atlasFieldSet()->field("rossby_radius"));
+      auto area = atlas::array::make_view<double, 2>(
+         geom.atlasFieldSet()->field("area"));
+
+      param_view.assign(baseValue);
+      for ( int i = 0; i < param_field.size(); i++ ) {
+        param_view(i, 0) += rossbyMult * rossbyRadius(i, 0);
+        param_view(i, 0) = std::max(param_view(i, 0),
+                                    minGridMult*sqrt(area(i, 0)));
+        param_view(i, 0) = std::max(param_view(i, 0), minValue);
+        param_view(i, 0) = std::min(param_view(i, 0), maxValue);
       }
+
+      // note: BUMP expects the length as a Gaspari-Cohn cutoff length,
+      //   but we probably think of it as a Gaussian 1 sigma, so convert.
+      for ( int i = 0; i < param_field.size(); i++ ) {
+        param_view(i, 0) *= 3.57;  // gaussian to GC factor
+      }
+
       param_name = "cor_rh";
       saber::bump_set_parameter_f90(keyBump_, param_name.size(),
                                     param_name.c_str(), param_fieldSet.get());

@@ -22,8 +22,9 @@ list( APPEND umdsst_test_ref
 
 list( APPEND umdsst_test_data
   Data/19850101_regridded_sst.nc
-  Data/obs_sst.nc
   Data/landmask.nc
+  Data/obs_sst.nc
+  Data/rossby_radius.dat
   )
 
 

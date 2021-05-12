@@ -1,9 +1,9 @@
 Test     : CostJb   : Nonlinear Jb = 0
 Test     : CostJo   : Nonlinear Jo(sea_surface_temperature) = 2106.96, nobs = 188, Jo/n = 11.2072, err = 0.363015
 Test     : CostFunction: Nonlinear J = 2106.96
-Test     : DRIPCGMinimizer: reduction in residual norm = 0.0523644
-Test     : CostFunction::addIncrement: Analysis: min = -2.21605, max = 32.2463, mean = 13.9286
+Test     : DRIPCGMinimizer: reduction in residual norm = 0.0278441
+Test     : CostFunction::addIncrement: Analysis: min = -2.16241, max = 32.1528, mean = 13.8328
 Test     : umdsst::ModelAuxControl not implemented
-Test     : CostJb   : Nonlinear Jb = 99.0877
-Test     : CostJo   : Nonlinear Jo(sea_surface_temperature) = 59.1677, nobs = 188, Jo/n = 0.314722, err = 0.363015
-Test     : CostFunction: Nonlinear J = 158.255
+Test     : CostJb   : Nonlinear Jb = 111.292
+Test     : CostJo   : Nonlinear Jo(sea_surface_temperature) = 28.1357, nobs = 188, Jo/n = 0.149658, err = 0.363015
+Test     : CostFunction: Nonlinear J = 139.427

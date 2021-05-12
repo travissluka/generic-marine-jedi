@@ -8,10 +8,10 @@
 #ifndef UMDSST_GEOMETRY_GEOMETRY_H_
 #define UMDSST_GEOMETRY_GEOMETRY_H_
 
+#include <memory>
 #include <ostream>
 #include <string>
-
-#include <memory>
+#include <vector>
 
 #include "atlas/functionspace.h"
 #include "atlas/field.h"
@@ -62,6 +62,9 @@ namespace umdsst {
     }
 
    private:
+    atlas::Field interpToGeom(const std::vector<eckit::geometry::Point2> &,
+                              const std::vector<double> &) const;
+    void readRossbyRadius(const std::string &);
     void print(std::ostream &) const;
     const eckit::mpi::Comm & comm_;
 
