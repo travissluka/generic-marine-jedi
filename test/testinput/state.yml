@@ -5,7 +5,7 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
 
 
 state test:
@@ -14,7 +14,7 @@ state test:
   date: &date 1985-01-01T12:00:00Z
   statefile:
     date: *date
-    filename: Data/19850101_regridded_sst.nc
+    filename: Data/19850101_regridded_sst_1x1.nc
     kelvin: true
     state variables: &state_vars [sea_surface_temperature]
   statefileout:

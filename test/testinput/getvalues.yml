@@ -5,7 +5,7 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
 
 state variables: &state_vars [sea_surface_temperature]
 
@@ -27,7 +27,7 @@ locations:
 getvalues test:
   state generate:
     date: 2018-04-15T00:00:00Z
-    filename: Data/19850101_regridded_sst.nc
+    filename: Data/19850101_regridded_sst_1x1.nc
     state variables: *state_vars
   interpolation tolerance: 1e-10
 

@@ -5,7 +5,7 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
   rossby radius file: Data/rossby_radius.dat
 
 analysis variables: &vars [sea_surface_temperature]  # must have
@@ -13,7 +13,7 @@ analysis variables: &vars [sea_surface_temperature]  # must have
 background:  # must have
   state variables: *vars
   date: 2018-04-15T00:00:00Z
-  filename: Data/19850101_regridded_sst.nc
+  filename: Data/19850101_regridded_sst_1x1.nc
 
 background error:
   covariance model: umdsstCovar

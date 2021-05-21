@@ -8,12 +8,12 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
 
 state:
   date: 2018-04-15T12:00:00Z
   state variables: [sea_surface_temperature]
-  filename: Data/19850101_regridded_sst.nc
+  filename: Data/19850101_regridded_sst_1x1.nc
   kelvin: true
 
 observations:

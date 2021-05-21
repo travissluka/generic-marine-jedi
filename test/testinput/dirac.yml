@@ -5,14 +5,14 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
 
 analysis variables: &vars [sea_surface_temperature]
 
 background:  # must have
   state variables: *vars
   date: 2018-04-15T00:00:00Z
-  filename: Data/19850101_regridded_sst.nc
+  filename: Data/19850101_regridded_sst_1x1.nc
 
 background error:
   covariance model: BUMP
@@ -39,7 +39,7 @@ dirac:
 
 initial condition:
   date: 2010-01-01T12:00:00Z
-  filename: Data/19850101_regridded_sst.nc
+  filename: Data/19850101_regridded_sst_1x1.nc
   state variables: [sea_surface_temperature]
 
 output B:

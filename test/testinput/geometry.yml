@@ -6,4 +6,4 @@ geometry:
       west: -180
 
   landmask:
-    filename: Data/landmask.nc
+    filename: Data/landmask_1x1.nc
