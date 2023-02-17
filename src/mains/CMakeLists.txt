@@ -1,14 +1,14 @@
-# ecbuild_add_executable( TARGET  genericmarine_convertstate.x
-#                         SOURCES ConvertState.cc
-#                         LIBS    genericmarine )
-
 ecbuild_add_executable( TARGET  genericmarine_hofx3d.x
                         SOURCES HofX3D.cc
                         LIBS    genericmarine )
 
-ecbuild_add_executable( TARGET  genericmarine_staticbinit.x
-                        SOURCES StaticBInit.cc
+ecbuild_add_executable( TARGET  genericmarine_setcorscales.x
+                        SOURCES SetCorScales.cc
                         LIBS    genericmarine )
+
+ecbuild_add_executable( TARGET  genericmarine_errorcovariance_training.x
+                        SOURCES ErrorCovarianceTraining.cc
+                        LIBS    genericmarine)
 
 ecbuild_add_executable( TARGET  genericmarine_dirac.x
                         SOURCES Dirac.cc

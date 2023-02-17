@@ -1,2 +1,4 @@
-Test     : Input Dirac increment: min = 0, max = 1, mean = 0.000138889
-Test     : B * Increment: min = -0, max = 1, mean = 0.0237249
+Input Dirac increment:min = 0.0000000000000000e+00, max = 1.0000000000000000e+00, mean = 1.3888888888888889e-04
+
+Covariance(SABER) * Increment:min = 0.0000000000000000e+00, max = 1.0000000000000004e+00, mean = 3.3690713934164042e-02
+
