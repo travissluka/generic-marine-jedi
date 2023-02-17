@@ -170,17 +170,19 @@ void Fields::zero() {
 // ----------------------------------------------------------------------------
 
 void Fields::read(const eckit::Configuration & conf) {
-    // create a global field valid on the root PE
-  atlas::Field globalSst = geom_.functionSpace().createField<double>(
+  // TODO(travis) generalize this to handle >1 fields
+
+  // create a global field valid on the root PE
+  atlas::Field globalData = geom_.functionSpace().createField<double>(
                        atlas::option::levels(1) |
                        atlas::option::global());
 
   // following code block should execute on the root PE only
-  if ( globalSst.size() != 0 ) {
+  if ( globalData.size() != 0 ) {
     int time = 0, lon = 0, lat = 0;
     std::string filename;
 
-    auto fd = make_view<double, 2>(globalSst);
+    auto fd = make_view<double, 2>(globalData);
 
     const atlas::functionspace::StructuredColumns & fspace =
       static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
@@ -210,51 +212,57 @@ void Fields::read(const eckit::Configuration & conf) {
       }
     }
 
-    // get sst data
-    netCDF::NcVar sstVar;
-    sstVar = file.getVar("sst");
-    if (sstVar.isNull())
-      util::abor1_cpp("Get sst var failed.", __FILE__, __LINE__);
-    float  sstData[lat][lon];
-    sstVar.getVar(sstData);  // if used double, read-in data would be wrong.
+    // get list of variables, and process each one
+    std::vector<std::string> varNames;
+    conf.get("state variables", varNames);
+    ASSERT(varNames.size() == 1);  // can only handle 1 state var at a time, for now.
+    for (std::string varName : varNames) {
+      oops::Log::info() << "Reading variable: " << varName << std::endl;
 
-    // mask missing values
-    const double epsilon = 1.0e-6;
-    const double missing_nc = -32768.0;
-    bool isKelvin = conf.getBool("kelvin", false);
-    for (int j = 0; j < lat; j++)
-      for (int i = 0; i < lon; i++)
-        if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
-          sstData[j][i] = missing_;
-          // TODO(someone) missing values that aren't a part of the landmask
-          // should be filled in instead
-        } else {
-          // Kelvin to Celsius which JEDI use internally, will check if the
-          // units is Kelvin or Celsius in the future
-          if (isKelvin)
-            sstData[j][i] -= 273.15;
+      // get data
+      netCDF::NcVar ncVar;
+      ncVar = file.getVar(varName);
+      if (ncVar.isNull())
+      util::abor1_cpp("Get variable from nc file failed.", __FILE__, __LINE__);
+      float data[lat][lon];
+      ncVar.getVar(data);  // if used double, read-in data would be wrong.
+
+      //   // mask missing values
+      //   const double epsilon = 1.0e-6;
+      //   const double missing_nc = -32768.0;
+      //   for (int j = 0; j < lat; j++)
+      //     for (int i = 0; i < lon; i++)
+      //       if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
+      //         sstData[j][i] = missing_;
+      //         // TODO(someone) missing values that aren't a part of the landmask
+      //         // should be filled in instead
+      //       } else {
+      //       }
+
+      // float to double
+      int idx = 0;
+      for (int j = lat-1; j >= 0; j--) {
+        for (int i = 0; i < lon; i++) {
+          fd(idx++, 0) = static_cast<double>(data[j][i]);
         }
+      }
 
-    // float to double
-    int idx = 0;
-    for (int j = lat-1; j >= 0; j--)
-      for (int i = 0; i < lon; i++)
-        fd(idx++, 0) = static_cast<double>(sstData[j][i]);
-  }
+      // scatter to the PEs
+      // TODO(travis) dangerous, don't do this?
+      static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
+        globalData, atlasFieldSet_.field(varName));
 
-  // scatter to the PEs
-  // TODO(travis) dangerous, don't do this?
-  static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
-    globalSst, atlasFieldSet_.field("sea_surface_temperature"));
-
-  // apply mask from read in landmask
-  if ( geom_.extraFields().has("gmask") ) {
-    atlas::Field mask_field = geom_.extraFields()["gmask"];
-    auto mask = make_view<int, 2>(mask_field);
-    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
-    for (int i = 0; i < mask.size(); i++) {
-      if (mask(i, 0) == 0)
-        fd(i, 0) = missing_;
+      // apply mask from read in landmask
+      if ( geom_.extraFields().has("gmask") ) {
+        oops::Log::info() << "Applying landmask to variable: " << varName << std::endl;
+        atlas::Field mask_field = geom_.extraFields()["gmask"];
+        auto mask = make_view<int, 2>(mask_field);
+        auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+        for (int i = 0; i < mask.size(); i++) {
+          if (mask(i, 0) == 0)
+            fd(i, 0) = missing_;
+        }
+      }
     }
   }
 
@@ -268,14 +276,18 @@ void Fields::write(const eckit::Configuration & conf) const {
   const atlas::functionspace::StructuredColumns & fspace =
     static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
 
+  // TODO(travis) handle multiple fields
+  ASSERT(vars_.size() == 1);  // only handling a single field right now
+  std::string varName = vars_[0];
+
   // gather from the PEs
-  atlas::Field globalSst = fspace.createField<double>(
+  atlas::Field globalData = fspace.createField<double>(
     atlas::option::levels(1) |
     atlas::option::global());
-  fspace.gather(atlasFieldSet_.field("sea_surface_temperature"), globalSst);
+  fspace.gather(atlasFieldSet_.field(varName), globalData);
 
   // The following code block should execute on the root PE only
-  if ( globalSst.size() != 0 ) {
+  if ( globalData.size() != 0 ) {
     int lat, lon, time = 1;
     std::string filename;
 
@@ -316,36 +328,30 @@ void Fields::write(const eckit::Configuration & conf) const {
 
     // inside use double, read/write use float
     // to make it consistent with the netCDF files.
-    netCDF::NcVar sstVar = file.addVar(std::string("sst"),
+    netCDF::NcVar ncVar = file.addVar(std::string(varName),
                                       netCDF::ncFloat, dims);
 
     // define units atts for data vars
     const float fillvalue = -32768.0;
-    sstVar.putAtt("units", "K");
-    sstVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
-    sstVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
+    ncVar.putAtt("units", "K");
+    ncVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
+    ncVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
     // write data to the file
-    auto fd = atlas::array::make_view<double, 2>(globalSst);
-    float sstData[time][lat][lon];
-    bool isKelvin = conf.getBool("kelvin", false);
+    auto fd = atlas::array::make_view<double, 2>(globalData);
+    float data[time][lat][lon];
     int idx = 0;
     for (int j = lat-1; j >= 0; j--)
       for (int i = 0; i < lon; i++) {
         if (fd(idx, 0) == missing_) {
-          sstData[0][j][i] = fillvalue;
+          data[0][j][i] = fillvalue;
         } else {
-          // doulbe to float, also convert JEDI Celsius to Kelvin, in the
-          // future it should be able to handle both Kelvin and Celsius.
-          if (isKelvin)
-            sstData[0][j][i] = static_cast<float>(fd(idx, 0)) + 273.15;
-          else
-            sstData[0][j][i] = static_cast<float>(fd(idx, 0));
+          data[0][j][i] = static_cast<float>(fd(idx, 0));
         }
         idx++;
       }
 
-    sstVar.putVar(sstData);
+    ncVar.putVar(data);
 
     oops::Log::info() << "Fields::write(), Successfully write data to file!"
                       << std::endl;

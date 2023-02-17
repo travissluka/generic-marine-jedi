@@ -1,3 +1,7 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
 geometry:
   grid:
     name: S360x180
@@ -5,7 +9,7 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: data_static/landmask_1x1.nc
+    filename: data_static/landmask_1p0.nc
 
 background error:
   covariance model: SABER
@@ -13,32 +17,30 @@ background error:
     # The correlation operator
     saber block name: BUMP_NICAS
     bump:
-      datadir: data_generated/staticbinit
-      load_nicas_local: true
-      strategy: specific_univariate
-      prefix: bump_sst
-      # mask_check: 1
-      # network: 1
-  # saber outer blocks:
-  # - saber block name: StdDev
-  #   input fields:
-  # - parameter: StdDev
-  #   file:
-  #     date: 2010-01-01T12:00:00Z
-  #     filename: data_static/landmask_1x1.nc
+      io:
+        data directory: data_generated/errorcovariance_training
+      drivers:
+        multivariate strategy: univariate
+        read local nicas: true
+      grids:
+      - model:
+          variables: [seaSurfaceTemperature]
+        io:
+          files prefix: bump
 
 dirac:
   date: 2010-01-01T12:00:00Z
-  ixdir: [20, 50, 95, 100, 150, 200, 250, 300, 350]
-  iydir: [10, 25, 95, 50,  75,  100, 125, 150, 175]
+  ixdir: [20, 50, 100, 100, 150, 200, 250, 300, 350]
+  iydir: [10, 25, 85, 50,  75,  100, 125, 150, 175]
 
 initial condition:
   date: 2010-01-01T12:00:00Z
-  filename: data_static/19850101_regridded_sst_1x1.nc
-  state variables: [sea_surface_temperature]
+  filename: data_static/sst_1p0.nc
+  state variables: [seaSurfaceTemperature]
 
 output dirac:
-  filename: data_generated/dirac/dirac_output.nc
-  date: 2010-01-01T12:00:00Z
-  exp: dirac_umdsst
-  type: an
+  filename: data_output/dirac.inc.nc
+
+test:
+  reference filename: testref/dirac.ref
+  test output filename: testoutput/dirac.ref

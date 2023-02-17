@@ -1,3 +1,7 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
 window length: P1D
 window begin: 2018-04-15T00:00:00Z
 
@@ -8,18 +12,17 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: data_static/landmask_1x1.nc
+    filename: data_static/landmask_1p0.nc
 
 state:
   date: 2018-04-15T12:00:00Z
-  state variables: [sea_surface_temperature]
-  filename: data_static/19850101_regridded_sst_1x1.nc
-  kelvin: true
+  state variables: [seaSurfaceTemperature]
+  filename: data_static/sst_1p0.nc
 
 observations:
   observers:
   - obs space:
-      name: SST
+      name: seaSurfaceTemperature
       obsdatain:
         engine:
           type: H5File
@@ -27,12 +30,17 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: data_generated/hofx3d/hofx3d_sst.nc
-      simulated variables: [sea_surface_temperature]
+          obsfile: data_output/hofx3d_sst.nc
+      simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
+      observation alias file: testinput/obsop_name_map.yml
     obs filters:
     - filter: Domain Check
       where:
-      - variable: {name: sea_area_fraction@GeoVaLs}
+      - variable: {name: GeoVaLs/sea_area_fraction}
         minvalue: 1.0
+
+test:
+  reference filename: testref/hofx3d.ref
+  test output filename: testoutput/hofx3d.ref

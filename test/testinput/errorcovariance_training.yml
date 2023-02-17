@@ -1,0 +1,52 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: data_static/landmask_1p0.nc
+
+input variables: [seaSurfaceTemperature]
+
+background:
+  date: &date 2018-04-15T12:00:00Z
+  filename: data_static/sst_1p0.nc
+  state variables: [seaSurfaceTemperature]
+
+bump:
+  io:
+    data directory: data_output/
+  drivers:
+    multivariate strategy: univariate
+    compute nicas: true
+    write local nicas: true
+  model:
+    do not cross mask boundaries: true
+  nicas:
+    resolution: 6.0
+  grids:
+  - model:
+      variables: [seaSurfaceTemperature]
+    io:
+      files prefix: bump
+
+input fields:
+- parameter: rh
+  file:
+    date: *date
+    filename: data_generated/setcorscales/rh.nc
+    state variables: [seaSurfaceTemperature]
+- parameter: rv
+  file:
+    date: *date
+    filename: data_generated/setcorscales/rv.nc
+    state variables: [seaSurfaceTemperature]
+
+test:
+  reference filename: testref/errorcovariance_training.ref
+  test output filename: testoutput/errorcovariance_training.ref

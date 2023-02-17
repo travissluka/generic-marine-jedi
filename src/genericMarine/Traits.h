@@ -23,8 +23,7 @@ namespace genericMarine {
 
   struct Traits{
     static std::string name() {return "genericMarine";}
-    static std::string nameCovar() {return "genericMarineCovar";}
-    static std::string nameCovar4D() {return "genericMarineCovar";}
+    static std::string nameCovar() {return "genericMarine-ID";}
 
     // Interfaces that genericMarine has to implement
     // ---------------------------------------------------

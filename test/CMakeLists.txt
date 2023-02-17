@@ -1,49 +1,12 @@
-list( APPEND genericmarine_test_input
-  testinput/errorcovariance.yml
-  testinput/geometry.yml
-  testinput/getvalues.yml
-  testinput/hofx3d.yml
-  testinput/increment.yml
-  testinput/lineargetvalues.yml
-  testinput/linearvarchange_stddev.yml
-  testinput/modelaux.yml
-  testinput/state.yml
-  testinput/dirac.yml
-  testinput/staticbinit.yml
-  testinput/var.yml
-  )
 
-list( APPEND genericmarine_test_ref
-  testref/hofx3d.ref
-  testref/dirac.ref
-  testref/staticbinit.ref
-  testref/var.ref
-  )
-
-list( APPEND genericmarine_test_data
-  Data/19850101_regridded_sst_1x1.nc
-  Data/landmask_1x1.nc
-  Data/obs_sst.nc
-  Data/rossby_radius.dat
-  )
-
-
-# Create directory for test input/output/reference and symlink all files
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
+# Create or link input/output directories
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
-foreach(FILENAME ${genericmarine_test_input} ${genericmarine_test_ref})
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-           ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
-           ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
-endforeach(FILENAME)
-
-# create static data directory, and symlink all files.
-execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-          ${CMAKE_CURRENT_SOURCE_DIR}/Data
-          ${CMAKE_CURRENT_BINARY_DIR}/data_static )
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data_generated)
-
+foreach(DIRNAME data_static testinput testref)
+  execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/${DIRNAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/${DIRNAME} )
+endforeach(DIRNAME)
 
 # number of PEs to use for MPI enabled tests.
 set( GENERICMARINE_TESTS_MAX_MPI 1)
@@ -111,6 +74,10 @@ function(genericmarine_add_test)
 
   # setup output directory
   file( MAKE_DIRECTORY ${WORKDIR}/data_generated/${ARG_NAME})
+  execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_BINARY_DIR}/data_generated/${ARG_NAME}
+    ${WORKDIR}/data_output )
+
 
   # Are we building a unit test / or running a soca executable?
   if ( ARG_SRC )
@@ -198,6 +165,7 @@ genericmarine_add_test( NAME modelauxcontrol
 #    MPI     ${MPI_PES}
 #    LIBS    genericmarine )
 
+#
 
 #================================================================================
 # Test of executables
@@ -206,13 +174,20 @@ genericmarine_add_test( NAME modelauxcontrol
 genericmarine_add_test( NAME hofx3d
                  EXE  genericmarine_hofx3d.x )
 
-genericmarine_add_test( NAME staticbinit
-                 EXE  genericmarine_staticbinit.x )
+# genericmarine_add_test( NAME staticbinit
+#                  EXE  genericmarine_staticbinit.x )
+
+genericmarine_add_test( NAME setcorscales
+                 EXE genericmarine_setcorscales.x )
+
+genericmarine_add_test( NAME errorcovariance_training
+                 EXE genericmarine_errorcovariance_training.x
+                 TEST_DEPENDS test_genericmarine_setcorscales )
 
 genericmarine_add_test( NAME dirac
                  EXE  genericmarine_dirac.x
-                 TEST_DEPENDS test_genericmarine_staticbinit )
+                 TEST_DEPENDS test_genericmarine_errorcovariance_training )
 
 genericmarine_add_test( NAME var
                  EXE  genericmarine_var.x
-                 TEST_DEPENDS test_genericmarine_staticbinit )
+                 TEST_DEPENDS test_genericmarine_errorcovariance_training )
