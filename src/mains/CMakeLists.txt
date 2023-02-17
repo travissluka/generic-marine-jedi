@@ -1,19 +1,19 @@
-ecbuild_add_executable( TARGET  umdsst_convertstate.x
-                        SOURCES ConvertState.cc
-                        LIBS    umdsst )
+# ecbuild_add_executable( TARGET  genericmarine_convertstate.x
+#                         SOURCES ConvertState.cc
+#                         LIBS    genericmarine )
 
-ecbuild_add_executable( TARGET  umdsst_dirac.x
-                        SOURCES Dirac.cc
-                        LIBS    umdsst )
-
-ecbuild_add_executable( TARGET  umdsst_hofx3d.x
+ecbuild_add_executable( TARGET  genericmarine_hofx3d.x
                         SOURCES HofX3D.cc
-                        LIBS    umdsst )
+                        LIBS    genericmarine )
 
-ecbuild_add_executable( TARGET  umdsst_staticbinit.x
+ecbuild_add_executable( TARGET  genericmarine_staticbinit.x
                         SOURCES StaticBInit.cc
-                        LIBS    umdsst )
+                        LIBS    genericmarine )
 
-ecbuild_add_executable( TARGET  umdsst_var.x
+ecbuild_add_executable( TARGET  genericmarine_dirac.x
+                        SOURCES Dirac.cc
+                        LIBS    genericmarine )
+
+ecbuild_add_executable( TARGET  genericmarine_var.x
                         SOURCES Var.cc
-                        LIBS    umdsst )
+                        LIBS    genericmarine )

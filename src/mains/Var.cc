@@ -5,17 +5,19 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "umdsst/Traits.h"
+#include "genericMarine/Traits.h"
 #include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
+#include "ufo/instantiateObsErrorFactory.h"
 #include "ufo/instantiateObsFilterFactory.h"
 #include "ufo/ObsTraits.h"
 #include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  saber::instantiateCovarFactory<umdsst::Traits>();
-  oops::Variational<umdsst::Traits, ufo::ObsTraits> var;
+  ufo::instantiateObsErrorFactory();
+  ufo::instantiateObsFilterFactory();
+  saber::instantiateCovarFactory<genericMarine::Traits>();
+  oops::Variational<genericMarine::Traits, ufo::ObsTraits> var;
   return run.execute(var);
 }

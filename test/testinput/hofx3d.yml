@@ -8,19 +8,26 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask_1x1.nc
+    filename: data_static/landmask_1x1.nc
 
 state:
   date: 2018-04-15T12:00:00Z
   state variables: [sea_surface_temperature]
-  filename: Data/19850101_regridded_sst_1x1.nc
+  filename: data_static/19850101_regridded_sst_1x1.nc
   kelvin: true
 
 observations:
+  observers:
   - obs space:
       name: SST
-      obsdatain: {obsfile: ./Data/obs_sst.nc}
-      obsdataout: {obsfile: ./Data/hofx_sst.nc}
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: data_static/obs_sst.nc
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: data_generated/hofx3d/hofx3d_sst.nc
       simulated variables: [sea_surface_temperature]
     obs operator:
       name: Identity

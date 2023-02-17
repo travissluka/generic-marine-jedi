@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "umdsst/Traits.h"
+#include "genericMarine/Traits.h"
 
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
@@ -14,8 +14,8 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  // saber::instantiateLocalizationFactory<umdsst::Traits>();
-  saber::instantiateCovarFactory<umdsst::Traits>();
-  oops::Dirac<umdsst::Traits> dir;
+  // saber::instantiateLocalizationFactory<genericMarine::Traits>();
+  saber::instantiateCovarFactory<genericMarine::Traits>();
+  oops::Dirac<genericMarine::Traits> dir;
   return run.execute(dir);
 }

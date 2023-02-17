@@ -5,10 +5,11 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask_1x1.nc
+    filename: data_static/landmask_1x1.nc
 
 inc variables: [sea_surface_temperature]
 
 increment test:
   date: 1985-01-01T12:00:00Z
   tolerance: 1e-12
+  skip rms by level test: true

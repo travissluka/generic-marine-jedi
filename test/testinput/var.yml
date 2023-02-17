@@ -11,66 +11,69 @@ cost function:
         type: global
         west: -180
     landmask:
-      filename: Data/landmask_1x1.nc
+      filename: data_static/landmask_1x1.nc
 
   background:
     state variables: *vars
     date: 2018-04-15T12:00:00Z
-    filename: Data/19850101_regridded_sst_1x1.nc
+    filename: data_static/19850101_regridded_sst_1x1.nc
     kelvin: true
 
   background error:
-    covariance model: BUMP
-    bump:
-      mask_check: 1
-      network: 1
-      verbosity: main
-      datadir: Data/bump
-      method: cor
-      load_nicas: 1
-      prefix: bump_sst
-      mpicom: 2
-      strategy: specific_univariate
-    variable changes:
-    - variable change: umdsstStdDev
-      input variables: *vars
-      output variables: *vars
-      fixed: 1.0
+    covariance model: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      bump:
+        load_nicas_local: true
+        datadir: data_generated/staticbinit
+        strategy: specific_univariate
+        prefix: bump_sst
+        # mask_check: 1
+        # network: 1
+    # variable changes:
+    # - variable change: umdsstStdDev
+    #   input variables: *vars
+    #   output variables: *vars
+    #   fixed: 1.0
 
   observations:
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      name: Identity
-    obs filters:
-    - filter: Domain Check
-      where:
-      - variable: {name: sea_area_fraction@GeoVaLs}
-        minvalue: 1.0
-    obs space:
-      name: sea_surface_temperature
-      obsdatain:
-        obsfile: Data/obs_sst.nc
-      simulated variables: [sea_surface_temperature]
-      obsdataout:
-        obsfile: Data/var.output.obs3d.nc
-
+    observers:
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        name: Identity
+      obs filters:
+      - filter: Domain Check
+        where:
+        - variable: {name: sea_area_fraction@GeoVaLs}
+          minvalue: 1.0
+      obs space:
+        name: sea_surface_temperature
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: data_static/obs_sst.nc
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: data_generated/var/var.sst.nc
+        simulated variables: [sea_surface_temperature]
 
 variational:
   minimizer:
     algorithm: DRIPCG
 
   iterations:
-  - diagnostics:
-      departures: ombg
+  - geometry: *geometry
     gradient norm reduction: 1.0e-10
     ninner: 10
-    geometry: *geometry
     test: on
+    diagnostics:
+      departures: ombg
     online diagnostics:
       write increment: true
-    increment:
-      filename: Data/var.output.increment.nc
+      increment:
+        filename: data_generated/var/var.increment.nc
 
 
 final:
@@ -79,4 +82,4 @@ final:
 
 
 output:
-  filename: Data/var.output.final.nc
+  filename: data_generated/var/var.final.nc

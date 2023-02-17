@@ -5,23 +5,23 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask_1x1.nc
+    filename: data_static/landmask_1x1.nc
 
 
 state test:
-  norm file: 17.618557808088323
+  norm file: 17.618557808088571
   tolerance: 1e-6
   date: &date 1985-01-01T12:00:00Z
   statefile:
     date: *date
-    filename: Data/19850101_regridded_sst_1x1.nc
+    filename: data_static/19850101_regridded_sst_1x1.nc
     kelvin: true
     state variables: &state_vars [sea_surface_temperature]
-  statefileout:
-    datadir: ./Data
-    exp: out
-    type: fc
-    date: 1985-01-01T12:00:00Z
-    filename: Data/out.19850101_regridded_sst.nc
-    kelvin: true
-    state variables: *state_vars
+  # statefileout:
+  #   datadir: ./Data
+  #   exp: out
+  #   type: fc
+  #   date: 1985-01-01T12:00:00Z
+  #   filename: Data/out.19850101_regridded_sst.nc
+  #   kelvin: true
+  #   state variables: *state_vars

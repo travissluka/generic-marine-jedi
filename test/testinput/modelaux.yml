@@ -1,5 +1,9 @@
 geometry:
-  # insert other model specific things here
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
 
-model aux control:
-model aux error:
+model aux control: {}
+model aux error: {}

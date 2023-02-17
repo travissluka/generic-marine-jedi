@@ -5,33 +5,31 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask_1x1.nc
-  rossby radius file: Data/rossby_radius.dat
+    filename: data_static/landmask_1x1.nc
+  rossby radius file: data_static/rossby_radius.dat
 
-analysis variables: &vars [sea_surface_temperature]  # must have
+analysis variables: &vars [sea_surface_temperature]
 
-background:  # must have
+background:
   state variables: *vars
   date: 2018-04-15T00:00:00Z
-  filename: Data/19850101_regridded_sst_1x1.nc
+  filename: data_static/19850101_regridded_sst_1x1.nc
 
 background error:
-  covariance model: umdsstCovar
+  covariance model: genericMarineCovar
   bump:
-    mask_check: 1
-    network: 1
     verbosity: main
-    datadir: Data/bump
+    datadir: data_generated/staticbinit
     method: cor
-    new_nicas: 1
-    ntry: 3
+    strategy: specific_univariate
+    new_nicas: true
+    write_nicas_local: true
+    mask_check: true
     prefix: bump_sst
     resol: 6.0
-    mpicom: 2
-    strategy: specific_univariate
-    nc1max: 100000
+
   correlation lengths:
     base value: 500.0e3
-    rossby mult: 1.0
+    rossby mult: 3.0
     min grid mult: 5.0
-    #min value: 200.0e3
+    min value: 1000.0e3

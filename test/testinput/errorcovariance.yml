@@ -21,12 +21,12 @@ background:
 background error:
   covariance model: umdsstCovar
   bump:
-    mask_check: 1
-    network: 1
+    mask_check: true
+    # network: 1
     verbosity: main
     datadir: Data/bump
     method: cor
-    load_nicas: 1
+    # load_nicas: 1
     prefix: bump_sst
-    mpicom: 2
+    # mpicom: 2
     strategy: specific_univariate

@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "umdsst/Traits.h"
+#include "genericMarine/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/ModelAuxCovariance.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::ModelAuxCovariance<umdsst::Traits> tests;
+  test::ModelAuxCovariance<genericMarine::Traits> tests;
   return run.execute(tests);
 }
 

@@ -1,4 +1,4 @@
-Test     : State: min = -1.74296, max = 30.7226, mean = 13.5655
-Test     : H(x): 
-Test     : SST nobs= 200 Min=-2.5419e+38, Max=29.7967, RMS=3.39967e+37
+Test     : State: min = -1.7429565191268921e+00, max = 3.0722620010375977e+01, mean = 1.3565451291252886e+01
+Test     : H(x):
+Test     : SST nobs= 200 Min=-2.5419000404811930e+38, Max=2.9796715043517157e+01, RMS=3.3996733568578016e+37
 Test     : End H(x)

@@ -5,32 +5,27 @@ geometry:
       type: global
       west: -180
   landmask:
-    filename: Data/landmask_1x1.nc
-
-analysis variables: &vars [sea_surface_temperature]
-
-background:  # must have
-  state variables: *vars
-  date: 2018-04-15T00:00:00Z
-  filename: Data/19850101_regridded_sst_1x1.nc
+    filename: data_static/landmask_1x1.nc
 
 background error:
-  covariance model: BUMP
-  bump:
-    mask_check: 1
-    network: 1
-    verbosity: main
-    datadir: Data/bump
-    method: cor
-    load_nicas: 1
-    prefix: bump_sst
-    mpicom: 2
-    strategy: specific_univariate
-  variable changes:
-  - variable change: umdsstStdDev
-    input variables: *vars
-    output variables: *vars
-    fixed: 1.0
+  covariance model: SABER
+  saber central block:
+    # The correlation operator
+    saber block name: BUMP_NICAS
+    bump:
+      datadir: data_generated/staticbinit
+      load_nicas_local: true
+      strategy: specific_univariate
+      prefix: bump_sst
+      # mask_check: 1
+      # network: 1
+  # saber outer blocks:
+  # - saber block name: StdDev
+  #   input fields:
+  # - parameter: StdDev
+  #   file:
+  #     date: 2010-01-01T12:00:00Z
+  #     filename: data_static/landmask_1x1.nc
 
 dirac:
   date: 2010-01-01T12:00:00Z
@@ -39,12 +34,11 @@ dirac:
 
 initial condition:
   date: 2010-01-01T12:00:00Z
-  filename: Data/19850101_regridded_sst_1x1.nc
+  filename: data_static/19850101_regridded_sst_1x1.nc
   state variables: [sea_surface_temperature]
 
-output B:
-  datadir: Data
-  filename: Data/dirac.x_output.nc
+output dirac:
+  filename: data_generated/dirac/dirac_output.nc
   date: 2010-01-01T12:00:00Z
-  exp: dirac_umdsst_B
+  exp: dirac_umdsst
   type: an
