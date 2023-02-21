@@ -369,8 +369,16 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
     atlas::Field fld = geom_.functionSpace().createField<double>(
                         atlas::option::levels(1) |
                         atlas::option::name(name));
-    fld.metadata().set("interp_type", "default");
 
+    // set field metadata
+    // TODO(travis) read these in from a configuration file so they aren't hardcoded??
+    fld.metadata().set("interp_type", "default");
+    if (name == "sea_area_fraction") {
+    } else {
+      fld.metadata().set("interp_source_point_mask", "mask");
+    }
+
+    // TODO(travis) can I avoid the copy and just add the field to the other fset?
     auto fd  = make_view<double, 2>(fld);
     auto fd2 = make_view<double, 2>(atlasFieldSet_.field(name));
     for (int j = 0; j < size; j++)

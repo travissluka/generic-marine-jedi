@@ -42,7 +42,8 @@ Geometry::Geometry(const eckit::Configuration & conf,
                           atlas::option::halo(0));
   // TODO(travis) put the halo back. Until then, this will only work on a single PE
 
-  // load landmask
+  // load landmask, after this call the fields "mask" (floating point) and "gmask" (integer)
+  // will be added. We need both because bump and the interpolation have different requirements
   if (conf.has("landmask.filename")) {
     loadLandMask(conf);
   }
@@ -96,6 +97,8 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
                                 atlas::option::levels(1) |
                                 atlas::option::name("gmask") |
                                 atlas::option::global());
+
+  const int size = functionSpace().size();
   auto fd = atlas::array::make_view<int, 2>(globalLandMask);
 
   // read file only on the root PE.
@@ -142,9 +145,19 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
                      atlas::option::levels(1) |
                      atlas::option::name("gmask"));
   extraFields_.add(fld);
-  // TODO(travis) dangerous, don't do this?
+  // TODO(travis) dangerous, don't do this static cast?
   static_cast<atlas::functionspace::StructuredColumns>(functionSpace()).scatter(
     globalLandMask, extraFields_.field("gmask"));
+
+  // create a floating point version
+  atlas::Field fldDbl = functionSpace().createField<double>(
+                        atlas::option::levels(1) |
+                        atlas::option::name("mask"));
+  auto fdi = atlas::array::make_view<int, 2>(fld);
+  auto fdd = atlas::array::make_view<double, 2>(fldDbl);
+  for (int j = 0; j < size; j++)
+    fdd(j, 0) = static_cast<double>(fdi(j, 0));
+  extraFields_.add(fldDbl);
 }
 
 // ----------------------------------------------------------------------------

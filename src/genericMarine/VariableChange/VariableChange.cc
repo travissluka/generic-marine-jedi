@@ -46,8 +46,6 @@ void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
     } else {
       ASSERT(1 == 2);
     }
-
-    xx2.fieldSet().field(name).metadata().set("interp_type", "default");
   }
 
   xx = xx2;
