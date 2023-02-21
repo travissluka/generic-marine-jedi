@@ -86,6 +86,9 @@ Geometry::Geometry(const eckit::Configuration & conf,
   if (conf.has("rossby radius file")) {
     readRossbyRadius(conf.getString("rossby radius file"));
   }
+
+  // done, exchange halos
+  extraFields_.haloExchange();
 }
 
 // ----------------------------------------------------------------------------
@@ -146,18 +149,19 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
     // the  atlas grid. This should be explicitly checked.
     int idx = 0;
     for (int j = lat-1; j >= 0; j--)
-      for (int i = 0; i < lon; i++)
+      for (int i = 0; i < lon; i++) {
         fd(idx++, 0) = dataLandMask[j][i];
+      }
   }
 
   // scatter to the PEs
   atlas::Field fld = functionSpace().createField<int>(
                      atlas::option::levels(1) |
                      atlas::option::name("gmask"));
-  extraFields_.add(fld);
   // TODO(travis) dangerous, don't do this static cast?
   static_cast<atlas::functionspace::StructuredColumns>(functionSpace()).scatter(
-    globalLandMask, extraFields_.field("gmask"));
+    globalLandMask, fld);
+  extraFields_.add(fld);
 
   // create a floating point version
   atlas::Field fldDbl = functionSpace().createField<double>(
@@ -168,6 +172,9 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   for (int j = 0; j < size; j++)
     fdd(j, 0) = static_cast<double>(fdi(j, 0));
   extraFields_.add(fldDbl);
+
+  // done, update halos
+  extraFields_.haloExchange();
 }
 
 // ----------------------------------------------------------------------------

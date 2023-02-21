@@ -7,7 +7,6 @@ geometry:
   landmask:
     filename: data_static/landmask_1p0.nc
 
-
 state test:
   norm file: 17.618557808088571
   tolerance: 1e-6
@@ -16,15 +15,6 @@ state test:
     date: *date
     filename: data_static/sst_1p0.nc
     state variables: [seaSurfaceTemperature]
-  # statefileout:
-  #   datadir: ./Data
-  #   exp: out
-  #   type: fc
-  #   date: 1985-01-01T12:00:00Z
-  #   filename: Data/out.19850101_regridded_sst.nc
-  #   kelvin: true
-  #   state variables: *state_vars
-
 
 test:
   reference filename: testref/state.ref

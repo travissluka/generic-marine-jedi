@@ -20,7 +20,7 @@ include( genericMarine_compiler_flags )
 ################################################################################
 # Dependencies
 ################################################################################
-find_package( NetCDF REQUIRED COMPONENTS Fortran )
+find_package( NetCDF REQUIRED COMPONENTS C CXX)
 find_package( eckit  1.11.6   REQUIRED)
 find_package( fckit  0.7.0    REQUIRED)
 find_package( atlas  0.20.2   REQUIRED)
