@@ -22,10 +22,15 @@
 #include "atlas/util/Config.h"
 
 #include "oops/base/Variables.h"
+#include "oops/mpi/mpi.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
 namespace genericMarine {
+
+// ----------------------------------------------------------------------------
+
+const int GEOM_HALO_SIZE = 1;
 
 // ----------------------------------------------------------------------------
 
@@ -37,10 +42,12 @@ Geometry::Geometry(const eckit::Configuration & conf,
   atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
   atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
   functionSpace_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                    atlas::option::halo(0));
+                    atlas::option::halo(GEOM_HALO_SIZE));
   functionSpaceIncHalo_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                          atlas::option::halo(0));
-  // TODO(travis) put the halo back. Until then, this will only work on a single PE
+                          atlas::option::halo(GEOM_HALO_SIZE));
+
+  const atlas::functionspace::StructuredColumns & fspace =
+    static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
 
   // load landmask, after this call the fields "mask" (floating point) and "gmask" (integer)
   // will be added. We need both because bump and the interpolation have different requirements
@@ -48,11 +55,14 @@ Geometry::Geometry(const eckit::Configuration & conf,
     loadLandMask(conf);
   }
 
+  // // grid halo mask
+  // atlas::Field hmask = fspace.createField<int>(
+  //   atlas::option:levels(1) | atlas::option::name("hmask"))
+  // hmask.set
+
   // calulate grid area
   // Temporary approximation solution, for a global
   // regular latlon grid, need to change if involved with other types of grid.
-  const atlas::functionspace::StructuredColumns & fspace =
-    static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
   double dx = 2. * M_PI * atlas::util::DatumIFS::radius() / fspace.grid().nxmax();
   auto lonlat_data = atlas::array::make_view<double, 2>(functionSpace().lonlat());
   atlas::Field area = functionSpace().createField<double>(
@@ -166,16 +176,21 @@ void Geometry::print(std::ostream & os) const {
   const atlas::functionspace::StructuredColumns & fspace =
     static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
 
+  // global size
   int ny = static_cast<int>(fspace.grid().ny());
   int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
-
   os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
 
+  // count grid points on local PE
   size_t nMaskedLand = 0;
   size_t nUnmaskedOcean = 0;
   const int nSize = functionSpace().size();
   auto fd = atlas::array::make_view<int, 2>(extraFields_.field("gmask"));
+  auto ghost = atlas::array::make_view<int, 1>(functionSpace().ghost());
   for (size_t j = 0; j < nSize; j++) {
+    // don't count halo (ghost) points
+    if (ghost(j) != 0) continue;
+
     if (fd(j, 0) == 1) {
       nUnmaskedOcean += 1;
     } else if (fd(j, 0) == 0) {
@@ -185,6 +200,11 @@ void Geometry::print(std::ostream & os) const {
         __FILE__, __LINE__);
     }
   }
+
+  // gather results from all PEs
+  oops::mpi::world().allReduceInPlace(nMaskedLand, eckit::mpi::Operation::SUM);
+  oops::mpi::world().allReduceInPlace(nUnmaskedOcean, eckit::mpi::Operation::SUM);
+
   os << "Geometry: # of unmasked ocean grid = " << nUnmaskedOcean
      << ", # of masked land grid = " << nMaskedLand << std::endl;
 }
@@ -272,6 +292,8 @@ void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
   } else {
     fspace = &functionSpace_;
   }
+
+  // TODO use halo info
 
   auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
   auto ngrid = lonlat.shape<0>();
