@@ -187,7 +187,7 @@ void Fields::read(const eckit::Configuration & conf) {
   auto fd = make_view<double, 2>(globalData);
 
   // Open the NetCDF file on the root PE
-  int ncid, retval;
+  int ncid;
   if ( globalData.size() != 0 ) {
     // get filename
     std::string filename;
@@ -257,6 +257,11 @@ void Fields::read(const eckit::Configuration & conf) {
     }
   }
 
+  // close file
+  if ( globalData.size() != 0 ) {
+    NC_CHECK(nc_close(ncid));
+  }
+
   // done, do halo exchange
   atlasFieldSet_.haloExchange();
 }
@@ -264,88 +269,72 @@ void Fields::read(const eckit::Configuration & conf) {
 // ----------------------------------------------------------------------------
 
 void Fields::write(const eckit::Configuration & conf) const {
+  // get some variables we'll need later
   const atlas::functionspace::StructuredColumns & fspace =
     static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
+  const int ny = static_cast<int>(fspace.grid().ny());
+  const int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
 
-  // TODO(travis) handle multiple fields
-  ASSERT(vars_.size() == 1);  // only handling a single field right now
-  std::string varName = vars_[0];
+  // create a global field valid on the root PE
+  atlas::Field globalData = geom_.functionSpace().createField<double>(
+                       atlas::option::levels(1) |
+                       atlas::option::global());
+  auto fd = make_view<double, 2>(globalData);
 
-  // gather from the PEs
-  atlas::Field globalData = fspace.createField<double>(
-    atlas::option::levels(1) |
-    atlas::option::global());
-  fspace.gather(atlasFieldSet_.field(varName), globalData);
-
-  // The following code block should execute on the root PE only
+  // open the netcdf file on the root pe
+  int ncid, dims[3];
   if ( globalData.size() != 0 ) {
-    int lat, lon, time = 1;
-    std::string filename;
-
-     oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
-
     // get filename
+    std::string filename;
     if (!conf.get("filename", filename)) {
-        util::abor1_cpp("Fields::write(), Get filename failed.",
-                        __FILE__, __LINE__);
+      util::abor1_cpp("Fields::write(), Get filename failed.", __FILE__, __LINE__);
     } else {
-      oops::Log::info() << "Fields::write(), filename=" << filename
-                        << std::endl;
+      oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
     }
 
-    // create netCDF file
-    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
-    if (file.isNull())
-      util::abor1_cpp("Fields::write(), Create netCDF file failed.",
-                      __FILE__, __LINE__);
+    // create file
+    NC_CHECK(nc_create(filename.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
+    NC_CHECK(nc_def_dim(ncid, "time", 1, &dims[0]));
+    NC_CHECK(nc_def_dim(ncid, "lat", ny, &dims[1]));
+    NC_CHECK(nc_def_dim(ncid, "lon", nx, &dims[2]));
 
-    // define dims
-    lat = fspace.grid().ny();
-    lon = ((atlas::RegularLonLatGrid)(fspace.grid())).nx();
+    // TODO(travis) save lat/lon as well
+  }
 
-    // unlimited dim if without size parameter, then it'll be 0,
-    // what about the size?
-    netCDF::NcDim timeDim = file.addDim("time", 1);
-    netCDF::NcDim latDim  = file.addDim("lat" , lat);
-    netCDF::NcDim lonDim  = file.addDim("lon" , lon);
-    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
-      util::abor1_cpp("Fields::write(), Define dims failed.",
-                      __FILE__, __LINE__);
-
-    std::vector<netCDF::NcDim> dims;
-    dims.push_back(timeDim);
-    dims.push_back(latDim);
-    dims.push_back(lonDim);
-
-    // inside use double, read/write use float
-    // to make it consistent with the netCDF files.
-    netCDF::NcVar ncVar = file.addVar(std::string(varName),
-                                      netCDF::ncFloat, dims);
-
-    // define units atts for data vars
+  // for each variable
+  for (int s = 0; s < vars_.size(); s++) {
+    const std::string varName = vars_[s];
     const float fillvalue = -32768.0;
-    ncVar.putAtt("units", "K");
-    ncVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
-    ncVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
-    // write data to the file
-    auto fd = atlas::array::make_view<double, 2>(globalData);
-    float data[time][lat][lon];
-    int idx = 0;
-    for (int j = lat-1; j >= 0; j--)
-      for (int i = 0; i < lon; i++) {
-        if (fd(idx, 0) == missing_) {
-          data[0][j][i] = fillvalue;
-        } else {
-          data[0][j][i] = static_cast<float>(fd(idx, 0));
+    // gather the data to root PE
+    fspace.gather(atlasFieldSet_.field(varName), globalData);
+
+    if ( globalData.size() != 0 ) {
+      // convert the data
+      float data[1][ny][nx];
+      int idx = 0;
+      for (int j = ny-1; j >= 0; j--) {
+        for (int i = 0; i < nx; i++) {
+          if (fd(idx, 0) == missing_) {
+            data[0][j][i] = fillvalue;
+          } else {
+            data[0][j][i] = static_cast<float>(fd(idx, 0));
+          }
+          idx++;
         }
-        idx++;
       }
 
-    ncVar.putVar(data);
+      // save to file
+      int varid;
+      NC_CHECK(nc_def_var(ncid, varName.c_str(), NC_FLOAT, 3, dims, &varid));
+      NC_CHECK(nc_def_var_fill(ncid, varid, NC_FILL, &fillvalue));
+      NC_CHECK(nc_put_var(ncid, varid, data));
+    }
+  }
 
-    oops::Log::info() << "Fields::write(), Successfully write data to file!"
-                      << std::endl;
+  // done, close file
+  if ( globalData.size() != 0 ) {
+    NC_CHECK(nc_close(ncid));
   }
 }
 
