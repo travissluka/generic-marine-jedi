@@ -5,6 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <algorithm>
 #include <fstream>
 #include <vector>
 #include "netcdf"
@@ -39,15 +40,31 @@ Geometry::Geometry(const eckit::Configuration & conf,
     : comm_(comm) {
 
   // create grid from configuration
+  // NOTE: we have to use "checkerboard"  instead of the default so that the
+  // poles aren't placed completely on a single PE, which breaks the interpolation
+  // at the moment due to a bug with redundant points.
   atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
   atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
   functionSpace_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                    atlas::option::halo(GEOM_HALO_SIZE));
-  functionSpaceIncHalo_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                          atlas::option::halo(GEOM_HALO_SIZE));
-
+                      atlas::grid::Partitioner("checkerboard"),
+                      atlas::option::halo(GEOM_HALO_SIZE));
+  functionSpaceNoHalo_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
+                          atlas::grid::Partitioner("checkerboard"),
+                          atlas::option::halo(0));
   const atlas::functionspace::StructuredColumns & fspace =
     static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
+
+  // debugging information about the grid
+  double minLat = 9e9, maxLat = -9e9, minLon = 9e9, maxLon = -9e9;
+  auto fd = atlas::array::make_view<double, 2>(functionSpaceNoHalo_.lonlat());
+  for (int i = 0; i < functionSpaceNoHalo_.size(); i++) {
+    minLat = std::min(minLat, fd(i, 1));
+    maxLat = std::max(maxLat, fd(i, 1));
+    minLon = std::min(minLon, fd(i, 0));
+    maxLon = std::max(maxLon, fd(i, 0));
+  }
+  oops::Log::debug() << "grid (Lat) / (Lon): (" << minLat << ", " << maxLat << ") / ("
+    << minLon << " , " << maxLon << ")"<< std::endl;
 
   // load landmask, after this call the fields "mask" (floating point) and "gmask" (integer)
   // will be added. We need both because bump and the interpolation have different requirements
@@ -266,7 +283,10 @@ atlas::Field Geometry::interpToGeom(
     atlas::option::levels(1));
   auto dstView = atlas::array::make_view<double, 2>(dstField);
   auto dstLonLat = atlas::array::make_view<double, 2>(functionSpace().lonlat());
+  auto fd_halo = atlas::array::make_view<int, 1>(functionSpace_.ghost());
   for (int i=0; i < functionSpace().size(); i++) {
+    if (fd_halo(i)) continue;
+
     eckit::geometry::Point2 dstPoint({dstLonLat(i, 0), dstLonLat(i, 1)});
     eckit::geometry::Point3 dstPoint3D;
     atlas::util::Earth::convertSphericalToCartesian(dstPoint, dstPoint3D);
@@ -293,24 +313,29 @@ atlas::Field Geometry::interpToGeom(
 // ----------------------------------------------------------------------------
 void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
                       const bool halo) const {
+  // which function space depend on whether we want halo points as well
   const atlas::functionspace::StructuredColumns* fspace;
   if (halo) {
-    fspace = &functionSpaceIncHalo_;
-  } else {
     fspace = &functionSpace_;
+  } else {
+    fspace = &functionSpaceNoHalo_;
   }
 
-  // TODO use halo info
-
+  // get the list of lat/lons
   auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
   auto ngrid = lonlat.shape<0>();
   for (size_t i=0; i < ngrid; i++) {
     // TODO(travis) don't do this, how should the halos work at the poles?
+    // this is a hack, and is wrong.
     auto lat = lonlat(i, 1);
-    if (lat > 90) lat = 90;
-    if (lat < -90) lat = -90;
+    auto lon = lonlat(i, 0);
+    // if (lon < -180 || lon > 180) lon += 0.0001;
+
+    if (lat < -90 ) { lat = -180 - lat; lon += 180; }
+    if (lat > 90 ) { lat = 180 - lat; lon += 180; }
+
     lats.push_back(lat);
-    lons.push_back(lonlat(i, 0));
+    lons.push_back(lon);
   }
 }
 

@@ -134,13 +134,15 @@ namespace genericMarine {
   double Increment::dot_product_with(const Increment &other) const {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(0));
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
 
     const int size = geom_.functionSpace().size();
     double dp = 0.0;
 
-    // Ligang: will be updated with missing_value process!
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++) {
+      if (fd_halo(i) != 0) continue;
       dp += fd(i, 0)*fd_other(i, 0);
+    }
 
     // sum results across PEs
     oops::mpi::world().allReduceInPlace(dp, eckit::mpi::Operation::SUM);
@@ -159,12 +161,21 @@ namespace genericMarine {
 
   void Increment::random() {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
     const int size = geom_.functionSpace().size();
 
     util::NormalDistribution<double> x(size, 0, 1.0, 1);
 
-    for (int i = 0; i < size; i++)
-      fd(i, 0) = x[i];
+    // TODO(travis) redo so that random number are computer on PE 0
+    // otherwise answers change depending on PE
+
+    int j = 0;
+    for (int i = 0; i < size; i++) {
+      if (fd_halo(i) != 0) continue;
+      fd(i, 0) = x[0];
+    }
+
+    atlasFieldSet_.haloExchange();
   }
 
 // ----------------------------------------------------------------------------

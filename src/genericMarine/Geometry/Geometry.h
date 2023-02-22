@@ -56,8 +56,8 @@ namespace genericMarine {
     // TODO(template_impl) GeometryIterator end() const;
 
     // atlas interfaces
-    const atlas::FunctionSpace & functionSpace() const {return functionSpaceIncHalo_;}
-    atlas::FunctionSpace & functionSpace() {return functionSpaceIncHalo_;}
+    const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
+    atlas::FunctionSpace & functionSpace() {return functionSpace_;}
     const atlas::FieldSet & extraFields() const {return extraFields_;}
     atlas::FieldSet & extraFields() {return extraFields_;}
 
@@ -75,7 +75,7 @@ namespace genericMarine {
     // private variables
     const eckit::mpi::Comm & comm_;
     atlas::functionspace::StructuredColumns functionSpace_;
-    atlas::functionspace::StructuredColumns functionSpaceIncHalo_;
+    atlas::functionspace::StructuredColumns functionSpaceNoHalo_;
     atlas::FieldSet extraFields_;
   };
 }  // namespace genericMarine
