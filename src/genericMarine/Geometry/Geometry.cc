@@ -72,11 +72,6 @@ Geometry::Geometry(const eckit::Configuration & conf,
     loadLandMask(conf);
   }
 
-  // // grid halo mask
-  // atlas::Field hmask = fspace.createField<int>(
-  //   atlas::option:levels(1) | atlas::option::name("hmask"))
-  // hmask.set
-
   // calulate grid area
   // Temporary approximation solution, for a global
   // regular latlon grid, need to change if involved with other types of grid.
@@ -98,6 +93,12 @@ Geometry::Geometry(const eckit::Configuration & conf,
     fld_data(i, 0) = 1.0;
   }
   extraFields_.add(fld);
+
+  // // halo mask (needed for SABER)
+  // atlas::Field halo = functionSpace().createField<int>(
+  //     atlas::option::levels(1) | atlas::option::name("hmask"));
+  // auto halo_data = atlas::array::make_view<int, 2>(halo);
+  // halo_data.assign(0);
 
   // add field for rossby radius
   if (conf.has("rossby radius file")) {
@@ -172,6 +173,7 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   }
 
   // scatter to the PEs
+  // gmask is needed for SABER
   atlas::Field fld = functionSpace().createField<int>(
                      atlas::option::levels(1) |
                      atlas::option::name("gmask"));
@@ -181,6 +183,7 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   extraFields_.add(fld);
 
   // create a floating point version
+  // mask is needed for OOPS interpolation
   atlas::Field fldDbl = functionSpace().createField<double>(
                         atlas::option::levels(1) |
                         atlas::option::name("mask"));
