@@ -35,8 +35,7 @@ const int GEOM_HALO_SIZE = 1;
 
 // ----------------------------------------------------------------------------
 
-Geometry::Geometry(const eckit::Configuration & conf,
-                    const eckit::mpi::Comm & comm)
+Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & comm)
     : comm_(comm) {
 
   // create grid from configuration
@@ -48,16 +47,15 @@ Geometry::Geometry(const eckit::Configuration & conf,
   functionSpace_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
                       atlas::grid::Partitioner("checkerboard"),
                       atlas::option::halo(GEOM_HALO_SIZE));
-  functionSpaceNoHalo_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                          atlas::grid::Partitioner("checkerboard"),
-                          atlas::option::halo(0));
   const atlas::functionspace::StructuredColumns & fspace =
     static_cast<atlas::functionspace::StructuredColumns>(functionSpace());
+  auto fd_ghost = atlas::array::make_view<int, 1>(functionSpace().ghost());
 
   // debugging information about the grid
   double minLat = 9e9, maxLat = -9e9, minLon = 9e9, maxLon = -9e9;
-  auto fd = atlas::array::make_view<double, 2>(functionSpaceNoHalo_.lonlat());
-  for (int i = 0; i < functionSpaceNoHalo_.size(); i++) {
+  auto fd = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+  for (int i = 0; i < functionSpace_.size(); i++) {
+    if(fd_ghost(i)) continue;
     minLat = std::min(minLat, fd(i, 1));
     maxLat = std::max(maxLat, fd(i, 1));
     minLon = std::min(minLon, fd(i, 0));
@@ -94,19 +92,26 @@ Geometry::Geometry(const eckit::Configuration & conf,
   }
   extraFields_.add(fld);
 
-  // // halo mask (needed for SABER)
-  // atlas::Field halo = functionSpace().createField<int>(
-  //     atlas::option::levels(1) | atlas::option::name("hmask"));
-  // auto halo_data = atlas::array::make_view<int, 2>(halo);
-  // halo_data.assign(0);
-
   // add field for rossby radius
   if (conf.has("rossby radius file")) {
     readRossbyRadius(conf.getString("rossby radius file"));
   }
 
-  // done, exchange halos
+  // exchange halos
   extraFields_.haloExchange();
+
+  // halo mask (needed for SABER)
+  // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
+  atlas::Field halo = functionSpace().createField<int>(
+      atlas::option::levels(1) | atlas::option::name("hmask"));
+  auto halo_data = atlas::array::make_view<int, 2>(halo);
+  halo_data.assign(0);
+  for (int i=0; i < functionSpace().size(); i++) {
+    if (fd_ghost(i)) continue;
+    halo_data(i,0) = 1;
+  }
+  extraFields_.add(halo);
+
 }
 
 // ----------------------------------------------------------------------------
@@ -316,26 +321,23 @@ atlas::Field Geometry::interpToGeom(
 // ----------------------------------------------------------------------------
 void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
                       const bool halo) const {
-  // which function space depend on whether we want halo points as well
-  const atlas::functionspace::StructuredColumns* fspace;
-  if (halo) {
-    fspace = &functionSpace_;
-  } else {
-    fspace = &functionSpaceNoHalo_;
-  }
+  lats.clear(); lats.reserve(functionSpace_.size());
+  lons.clear(); lons.reserve(functionSpace_.size());
 
   // get the list of lat/lons
-  auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
-  auto ngrid = lonlat.shape<0>();
-  for (size_t i=0; i < ngrid; i++) {
-    // TODO(travis) don't do this, how should the halos work at the poles?
-    // this is a hack, and is wrong.
-    auto lat = lonlat(i, 1);
-    auto lon = lonlat(i, 0);
-    // if (lon < -180 || lon > 180) lon += 0.0001;
+  auto fd_lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+  auto fd_halo = atlas::array::make_view<int, 1>(functionSpace_.ghost());
+  for (size_t i=0; i < functionSpace_.size(); i++) {
+    // skip if a halo point, and if we don't want halo points
+    if (!halo && fd_halo(i)) continue;
 
-    if (lat < -90 ) { lat = -180 - lat; lon += 180; }
-    if (lat > 90 ) { lat = 180 - lat; lon += 180; }
+    double lat = fd_lonlat(i, 1);
+    double lon = fd_lonlat(i, 0);
+
+    // TODO(travis) don't do this, how should the halos work at the poles?
+    // this is a hack, and is wrong. Wrap the halo points beyond the poles.
+    if (fd_halo(i) && lat < -90 ) { lat = -180 - lat; lon += 180; }
+    if (fd_halo(i) && lat > 90 ) { lat = 180 - lat; lon += 180; }
 
     lats.push_back(lat);
     lons.push_back(lon);

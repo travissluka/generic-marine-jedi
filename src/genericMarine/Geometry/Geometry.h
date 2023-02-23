@@ -75,7 +75,6 @@ namespace genericMarine {
     // private variables
     const eckit::mpi::Comm & comm_;
     atlas::functionspace::StructuredColumns functionSpace_;
-    atlas::functionspace::StructuredColumns functionSpaceNoHalo_;
     atlas::FieldSet extraFields_;
   };
 }  // namespace genericMarine

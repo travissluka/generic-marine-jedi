@@ -231,7 +231,7 @@ namespace genericMarine {
     conf.get("variables", variables);
 
     // for each varaible, create diracs
-    for ( auto varConf : variables ){
+    for ( auto varConf : variables ) {
       // get config for this variable
       std::string varName = varConf.getString("name");
       std::vector<int> ixdir(varConf.getIntVector("ixdir"));
@@ -251,7 +251,7 @@ namespace genericMarine {
         int gidx = -1;
         int ix = ixdir[j]+1;
         int iy = iydir[j]+1;
-        for (int i = 0; i < fspace.size(); i++){
+        for (int i = 0; i < fspace.size(); i++) {
           if (fd_halo(i)) continue;
           if (fd_i(i) == ix && fd_j(i) == iy) {
             fd(i, 0) = 1.0;

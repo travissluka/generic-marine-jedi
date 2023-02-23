@@ -342,6 +342,11 @@ void Fields::write(const eckit::Configuration & conf) const {
 
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   const int size = geom_.functionSpace().size();
+
+  // synchronize halos before sending out
+  atlasFieldSet_.haloExchange();
+
+  // copy each field
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
     ASSERT(atlasFieldSet_.has(name));
@@ -361,8 +366,9 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
     // TODO(travis) can I avoid the copy and just add the field to the other fset?
     auto fd  = make_view<double, 2>(fld);
     auto fd2 = make_view<double, 2>(atlasFieldSet_.field(name));
-    for (int j = 0; j < size; j++)
+    for (int j = 0; j < size; j++) {
       fd(j, 0) = fd2(j, 0);
+    }
 
     fset.add(fld);
   }
@@ -378,17 +384,12 @@ void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
 
     auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_in = make_view<double, 2>(fset.field(name));
-
     for (int j = 0; j < size; j++) {
-      if (fd(j, 0) == missing_ || fd_in(j, 0) == missing_)
-        fd(j, 0) = missing_;
-      else
         fd(j, 0) += fd_in(j, 0);
     }
-  }
 
-  // TODO(travis) adjoint halo exchange
-  // atlasFieldSet_.adjointHaloExchange();
+    atlasFieldSet_.field(name).adjointHaloExchange();
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -406,6 +407,8 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
       fd(j, 0) = fd_in(j, 0);
     }
   }
+
+  atlasFieldSet_.haloExchange();
 }
 
 // ----------------------------------------------------------------------------
