@@ -1,13 +1,13 @@
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(seaSurfaceTemperature) = 2.2920396062162135e+03, nobs = 196, Jo/n = 1.1694079623552110e+01, err = 3.6459930144420483e-01
-CostFunction: Nonlinear J = 2.2920396062162135e+03
-RPCGMinimizer: reduction in residual norm = 1.7279823606424039e-02
-CostFunction::addIncrement: Analysis: min = -3.6256396477450297e+00, max = 3.2162422733660499e+01, mean = 1.3903837132374584e+01
+CostJo   : Nonlinear Jo(seaSurfaceTemperature) = 2.2550510124063467e+03, nobs = 195, Jo/n = 1.1564364166186394e+01, err = 3.6363125546251329e-01
+CostFunction: Nonlinear J = 2.2550510124063467e+03
+DRIPCGMinimizer: reduction in residual norm = 6.2213797517334468e-02
+CostFunction::addIncrement: Analysis: min = -3.6214932401167697e+00, max = 3.2211364852730142e+01, mean = 1.3895602649356574e+01
 
 genericMarine::ModelAuxControl not implemented
 
 
 
-CostJb   : Nonlinear Jb = 1.0492267374804221e+02
-CostJo   : Nonlinear Jo(seaSurfaceTemperature) = 7.4771366230933438e+01, nobs = 196, Jo/n = 3.8148656240272161e-01, err = 3.6459930144420483e-01
-CostFunction: Nonlinear J = 1.7969403997897564e+02
+CostJb   : Nonlinear Jb = 1.0261931030046682e+02
+CostJo   : Nonlinear Jo(seaSurfaceTemperature) = 7.1161243359994089e+01, nobs = 195, Jo/n = 3.6492945312817482e-01, err = 3.6363125546251329e-01
+CostFunction: Nonlinear J = 1.7378055366046090e+02

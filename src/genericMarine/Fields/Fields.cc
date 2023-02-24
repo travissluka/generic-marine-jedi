@@ -9,6 +9,7 @@
 
 #include <limits>
 #include <string>
+#include <iomanip>
 
 #include "genericMarine/Fields/Fields.h"
 #include "genericMarine/Geometry/Geometry.h"
@@ -64,6 +65,7 @@ void Fields::updateFields(const oops::Variables & vars) {
                           atlas::option::name(vars[v]));
       auto fd = make_view<double, 2>(fld);
       fd.assign(0.0);
+      fld.haloExchange();
       fset.add(fld);
     }
   }
@@ -175,13 +177,13 @@ void Fields::zero() {
 
 void Fields::read(const eckit::Configuration & conf) {
   // get some variables we'll need later
-  const atlas::functionspace::StructuredColumns & fspace =
-    static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
-  const int ny = static_cast<int>(fspace.grid().ny());
-  const int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  atlas::StructuredGrid grid = fspace.grid();
+  atlas::idx_t ny = grid.ny();
+  atlas::idx_t nx = grid.nxmax();
 
   // create a global field valid on the root PE
-  atlas::Field globalData = geom_.functionSpace().createField<double>(
+  atlas::Field globalData = fspace.createField<double>(
                        atlas::option::levels(1) |
                        atlas::option::global());
   auto fd = make_view<double, 2>(globalData);
@@ -232,18 +234,17 @@ void Fields::read(const eckit::Configuration & conf) {
       // TODO(travis) mask missing values?
 
       // float to double
-      int idx = 0;
-      for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
-          fd(idx++, 0) = static_cast<double>(data[j][i]);
-        }
+      // invert the y axis on incoming data
+      for (atlas::idx_t jj = 0; jj < ny; jj++) {
+        for (atlas::idx_t ii = 0; ii < grid.nx(ny-1-jj); ii++){
+             fd(grid.index(ii,ny-1-jj), 0) = static_cast<double>(data[jj][ii]);
+         }
       }
     }
 
     // scatter to the PEs
-    // TODO(travis) dangerous, don't do this?
-    static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
-      globalData, atlasFieldSet_.field(varName));
+    atlas::Field & fld = atlasFieldSet_.field(varName);
+    fspace.scatter(globalData, fld);
 
     // apply mask from read in landmask
     if ( geom_.extraFields().has("gmask") ) {
@@ -255,15 +256,15 @@ void Fields::read(const eckit::Configuration & conf) {
         if (mask(i, 0) == 0) { fd(i, 0) = missing_; }
       }
     }
+
+    // exchange halos
+    fspace.haloExchange(fld);
   }
 
   // close file
   if ( globalData.size() != 0 ) {
     NC_CHECK(nc_close(ncid));
   }
-
-  // done, do halo exchange
-  atlasFieldSet_.haloExchange();
 }
 
 // ----------------------------------------------------------------------------
@@ -343,8 +344,7 @@ void Fields::write(const eckit::Configuration & conf) const {
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   const int size = geom_.functionSpace().size();
 
-  // synchronize halos before sending out
-  atlasFieldSet_.haloExchange();
+  fset.clear();
 
   // copy each field
   for (int v = 0; v < vars_.size(); v++) {
@@ -354,6 +354,8 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
     atlas::Field fld = geom_.functionSpace().createField<double>(
                         atlas::option::levels(1) |
                         atlas::option::name(name));
+    atlas::Field fld_src = atlasFieldSet_.field(name);
+    geom_.functionSpace().haloExchange(fld_src);
 
     // set field metadata
     // TODO(travis) read these in from a configuration file so they aren't hardcoded??
@@ -365,7 +367,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
     // TODO(travis) can I avoid the copy and just add the field to the other fset?
     auto fd  = make_view<double, 2>(fld);
-    auto fd2 = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fd2 = make_view<double, 2>(fld_src);
     for (int j = 0; j < size; j++) {
       fd(j, 0) = fd2(j, 0);
     }
@@ -378,17 +380,19 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
 void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
   const int size = geom_.functionSpace().size();
+
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto & fld = atlasFieldSet_.field(name);
+    auto fd    = make_view<double, 2>(fld);
     auto fd_in = make_view<double, 2>(fset.field(name));
     for (int j = 0; j < size; j++) {
         fd(j, 0) += fd_in(j, 0);
     }
 
-    atlasFieldSet_.field(name).adjointHaloExchange();
+    geom_.functionSpace().adjointHaloExchange(fld);
   }
 }
 
@@ -400,15 +404,16 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fld   = atlasFieldSet_.field(name);
+    auto fd    = make_view<double, 2>(fld);
     auto fd_in = make_view<double, 2>(fset.field(name));
 
     for (int j = 0; j < size; j++) {
       fd(j, 0) = fd_in(j, 0);
     }
-  }
 
-  atlasFieldSet_.haloExchange();
+    geom_.functionSpace().haloExchange(fld);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -418,13 +423,12 @@ void Fields::print(std::ostream & os) const {
   for (int v = 0; v < vars_.size(); v++) {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
     auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
-    double mean = 0.0, sum = 0.0,
-          min = std::numeric_limits<double>::max(),
-          max = std::numeric_limits<double>::min();
+    double mean = 0.0, sum = 0.0, min = 9e90, max = -9e90;
     int nValid = 0;
 
     for (int i = 0; i < size; i++) {
-      if (fd(i, 0) != missing_ && fd_halo(i) == 0) {
+      if (fd(i, 0) != missing_ && fd_halo(i) == 0)
+      {
         if (fd(i, 0) < min) min = fd(i, 0);
         if (fd(i, 0) > max) max = fd(i, 0);
 
