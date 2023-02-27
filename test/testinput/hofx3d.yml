@@ -39,7 +39,7 @@ observations:
     - filter: Domain Check
       where:
       - variable: {name: GeoVaLs/sea_area_fraction}
-        minvalue: 1.0
+        minvalue: 0.5
 
 test:
   reference filename: testref/hofx3d.ref

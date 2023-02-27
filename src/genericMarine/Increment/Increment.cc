@@ -134,13 +134,15 @@ namespace genericMarine {
   double Increment::dot_product_with(const Increment &other) const {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(0));
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
 
     const int size = geom_.functionSpace().size();
     double dp = 0.0;
 
-    // Ligang: will be updated with missing_value process!
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++) {
+      if (fd_halo(i) != 0) continue;
       dp += fd(i, 0)*fd_other(i, 0);
+    }
 
     // sum results across PEs
     oops::mpi::world().allReduceInPlace(dp, eckit::mpi::Operation::SUM);
@@ -159,12 +161,21 @@ namespace genericMarine {
 
   void Increment::random() {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
     const int size = geom_.functionSpace().size();
 
     util::NormalDistribution<double> x(size, 0, 1.0, 1);
 
-    for (int i = 0; i < size; i++)
-      fd(i, 0) = x[i];
+    // TODO(travis) redo so that random number are computer on PE 0
+    // otherwise answers change depending on PE
+
+    int j = 0;
+    for (int i = 0; i < size; i++) {
+      if (fd_halo(i) != 0) continue;
+      fd(i, 0) = x[0];
+    }
+
+    atlasFieldSet_.haloExchange();
   }
 
 // ----------------------------------------------------------------------------
@@ -206,55 +217,46 @@ namespace genericMarine {
 // ----------------------------------------------------------------------------
 
   void Increment::dirac(const eckit::Configuration & conf) {
-    // Ligang: Do NOT know what it is, may ask Jim. Idea of coding from JEDI.
-    std::vector<int> ixdir(conf.getIntVector("ixdir"));
-    std::vector<int> iydir(conf.getIntVector("iydir"));
-
-    // check
-    ASSERT(ixdir.size() > 0 && ixdir.size() == iydir.size());
-    const int dir_size = ixdir.size();
-
-    // This is where we need the field_data to be 2D
+    // get grid related stuff
     const atlas::functionspace::StructuredColumns & fspace =
       static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
     const int ny = static_cast<int>(fspace.grid().ny());
     const int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx());
-    for (int i = 0; i < dir_size; i++)
-      ASSERT(ixdir[i] < nx && iydir[i] < ny);
+    auto fd_i = make_view<int, 1>(fspace.index_i());
+    auto fd_j = make_view<int, 1>(fspace.index_j());
+    auto fd_halo = make_view<int, 1>(fspace.ghost());
 
-    atlas::Field gi = fspace.global_index();
-    atlas::Field ri = fspace.remote_index();
-    auto fd_gi = make_view<int64_t, 1>(gi);
-    auto fd_ri = make_view<int, 1>(ri);
+    // get dirac configuration
+    std::vector<eckit::LocalConfiguration> variables;
+    conf.get("variables", variables);
 
-    const int sz = fspace.size();
+    // for each varaible, create diracs
+    for ( auto varConf : variables ) {
+      // get config for this variable
+      std::string varName = varConf.getString("name");
+      std::vector<int> ixdir(varConf.getIntVector("ixdir"));
+      std::vector<int> iydir(varConf.getIntVector("iydir"));
+      const int ndir = ixdir.size();
 
-    auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
-    for (int i = 0; i < dir_size; i++) {
-      // Ligang: 2D to 1D global_index, the 1D global_index starts from 1, which
-      // is normally oriented to user; while 1D remote_index and the 2D
-      // specification start from 0 and (0,0) (as in ncview), which is kind
-      // oriented to C++ programming. The relationship below is only for our
-      // simple case (grid), need to dig deep in how atlas store globa_indices.
-      int g_idx = iydir[i]*nx + ixdir[i] + 1;
+      // sanity checks
+      ASSERT(ixdir.size() > 0 && ixdir.size() == iydir.size());
+      for (int i = 0; i < ndir; i++)
+        ASSERT(ixdir[i] < nx && iydir[i] < ny);
 
-      // Use if below to avoid unnecessary search.
-      if (fd_gi(0) <= g_idx && g_idx <= fd_gi(sz-1)) {
-        // Find the corresponding remote_index to the global g_idx on this CPU.
-        // If we know for sure the array fd_gi() is increasing, we can use more
-        // efficient algorithm for search.
-        int j_loc = 0;
-        for (j_loc = 0; j_loc < sz; j_loc++) {
-          if (fd_gi(j_loc) == g_idx)
+      // get the relevant field
+      auto fd = make_view<double, 2>(atlasFieldSet_.field(varName));
+
+      // for each index
+      for (int j = 0; j < ndir; j++) {
+        int gidx = -1;
+        int ix = ixdir[j]+1;
+        int iy = iydir[j]+1;
+        for (int i = 0; i < fspace.size(); i++) {
+          if (fd_halo(i)) continue;
+          if (fd_i(i) == ix && fd_j(i) == iy) {
+            fd(i, 0) = 1.0;
             break;
-        }
-        if (j_loc >= sz) {
-          util::abor1_cpp("Increment::dirac(), failed to find global idx.",
-                           __FILE__, __LINE__);
-        } else {
-          // The arrays of globa/remote index should be matching.
-          int r_idx = fd_ri(j_loc);
-          fd(r_idx, 0) = 1.0;
+          }
         }
       }
     }

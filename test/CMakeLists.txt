@@ -9,7 +9,7 @@ foreach(DIRNAME data_static testinput testref)
 endforeach(DIRNAME)
 
 # number of PEs to use for MPI enabled tests.
-set( GENERICMARINE_TESTS_MAX_MPI 1)
+set( GENERICMARINE_TESTS_MAX_MPI 4)
 
 
 #---------------------------------------------------------------------------------------------------

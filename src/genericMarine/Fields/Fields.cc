@@ -5,10 +5,11 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <netcdf.h>
+
 #include <limits>
 #include <string>
-
-#include "netcdf"
+#include <iomanip>
 
 #include "genericMarine/Fields/Fields.h"
 #include "genericMarine/Geometry/Geometry.h"
@@ -26,6 +27,9 @@
 using atlas::array::make_view;
 
 namespace genericMarine {
+
+#define NC_CHECK(e) { if (e) {\
+  util::abor1_cpp(std::string("Fields::nc failed: ") + nc_strerror(e), __FILE__, __LINE__);}}
 
 // ----------------------------------------------------------------------------
 
@@ -136,9 +140,10 @@ double Fields::norm() const {
 
   for (int v = 0; v < vars_.size(); v++) {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
 
     for (int i = 0; i < size; i++) {
-      if (fd(i, 0) != missing_) {
+      if (fd(i, 0) != missing_ && fd_halo(i) == 0) {
         nValid += 1;
         s += fd(i, 0)*fd(i, 0);
       }
@@ -170,191 +175,164 @@ void Fields::zero() {
 // ----------------------------------------------------------------------------
 
 void Fields::read(const eckit::Configuration & conf) {
-  // TODO(travis) generalize this to handle >1 fields
+  // get some variables we'll need later
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  atlas::StructuredGrid grid = fspace.grid();
+  atlas::idx_t ny = grid.ny();
+  atlas::idx_t nx = grid.nxmax();
 
   // create a global field valid on the root PE
-  atlas::Field globalData = geom_.functionSpace().createField<double>(
+  atlas::Field globalData = fspace.createField<double>(
                        atlas::option::levels(1) |
                        atlas::option::global());
+  auto fd = make_view<double, 2>(globalData);
 
-  // following code block should execute on the root PE only
+  // Open the NetCDF file on the root PE
+  int ncid;
   if ( globalData.size() != 0 ) {
-    int time = 0, lon = 0, lat = 0;
-    std::string filename;
-
-    auto fd = make_view<double, 2>(globalData);
-
-    const atlas::functionspace::StructuredColumns & fspace =
-      static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
-
     // get filename
-    if (!conf.get("filename", filename))
-      util::abor1_cpp("Fields::read(), Get filename failed.",
-        __FILE__, __LINE__);
-
-    // open netCDF file
-    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::read);
-    if (file.isNull())
-      util::abor1_cpp("Fields::read(), Create netCDF file failed.",
-        __FILE__, __LINE__);
-
-    // get file dimensions
-    time = static_cast<int>(file.getDim("time").getSize());
-    lon  = static_cast<int>(file.getDim("lon").getSize());
-    lat  = static_cast<int>(file.getDim("lat").getSize());
-    {
-      // sanity check
-      int ny = static_cast<int>(fspace.grid().ny());
-      int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
-      if (time != 1 || lat != ny || lon != nx) {
-        util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx",
-        __FILE__, __LINE__);
-      }
+    std::string filename;
+    if (!conf.get("filename", filename)) {
+      util::abor1_cpp("Fields::read(), Get filename failed.", __FILE__, __LINE__);
     }
 
-    // get list of variables, and process each one
-    std::vector<std::string> varNames;
-    conf.get("state variables", varNames);
-    ASSERT(varNames.size() == 1);  // can only handle 1 state var at a time, for now.
-    for (std::string varName : varNames) {
-      oops::Log::info() << "Reading variable: " << varName << std::endl;
+    // open netCDF file
+    NC_CHECK(nc_open(filename.c_str(), NC_NOWRITE, &ncid));
 
-      // get data
-      netCDF::NcVar ncVar;
-      ncVar = file.getVar(varName);
-      if (ncVar.isNull())
-      util::abor1_cpp("Get variable from nc file failed.", __FILE__, __LINE__);
-      float data[lat][lon];
-      ncVar.getVar(data);  // if used double, read-in data would be wrong.
+    // check file dimensions
+    // TODO(travis) allow these to be configurable
+    int varid;
+    size_t time = 0, lon = 0, lat = 0;
+    NC_CHECK(nc_inq_dimid(ncid, "time", &varid));
+    NC_CHECK(nc_inq_dimlen(ncid, varid, &time));
+    NC_CHECK(nc_inq_dimid(ncid, "lat", &varid));
+    NC_CHECK(nc_inq_dimlen(ncid, varid, &lat));
+    NC_CHECK(nc_inq_dimid(ncid, "lon", &varid));
+    NC_CHECK(nc_inq_dimlen(ncid, varid, &lon));
 
-      //   // mask missing values
-      //   const double epsilon = 1.0e-6;
-      //   const double missing_nc = -32768.0;
-      //   for (int j = 0; j < lat; j++)
-      //     for (int i = 0; i < lon; i++)
-      //       if (abs(sstData[j][i]-(missing_nc)) < epsilon) {
-      //         sstData[j][i] = missing_;
-      //         // TODO(someone) missing values that aren't a part of the landmask
-      //         // should be filled in instead
-      //       } else {
-      //       }
-
-      // float to double
-      int idx = 0;
-      for (int j = lat-1; j >= 0; j--) {
-        for (int i = 0; i < lon; i++) {
-          fd(idx++, 0) = static_cast<double>(data[j][i]);
-        }
-      }
-
-      // scatter to the PEs
-      // TODO(travis) dangerous, don't do this?
-      static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace()).scatter(
-        globalData, atlasFieldSet_.field(varName));
-
-      // apply mask from read in landmask
-      if ( geom_.extraFields().has("gmask") ) {
-        oops::Log::info() << "Applying landmask to variable: " << varName << std::endl;
-        atlas::Field mask_field = geom_.extraFields()["gmask"];
-        auto mask = make_view<int, 2>(mask_field);
-        auto fd = make_view<double, 2>(atlasFieldSet_.field(0));
-        for (int i = 0; i < mask.size(); i++) {
-          if (mask(i, 0) == 0)
-            fd(i, 0) = missing_;
-        }
-      }
+    // sanity check
+    if (time != 1 || lat != ny || lon != nx) {
+      util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx", __FILE__, __LINE__);
     }
   }
 
-  // done, do halo exchange
-  atlasFieldSet_.haloExchange();
+  // get list of variables, and process each one
+  std::vector<std::string> varNames;
+  conf.get("state variables", varNames);
+  for (std::string varName : varNames) {
+    oops::Log::info() << "Reading variable: " << varName << std::endl;
+
+    // get data on root PE
+    if ( globalData.size() != 0 ) {
+      int varid;
+      float data[ny][nx];  // TODO(travis) not safe if input was a double
+      NC_CHECK(nc_inq_varid(ncid, varName.c_str(), &varid));
+      NC_CHECK(nc_get_var(ncid, varid, data));
+
+      // TODO(travis) mask missing values?
+
+      // copy float to double, and invert the y axis on incoming data
+      for (atlas::idx_t jj = 0; jj < ny; jj++) {
+        for (atlas::idx_t ii = 0; ii < grid.nx(ny-1-jj); ii++) {
+             fd(grid.index(ii, ny-1-jj), 0) = static_cast<double>(data[jj][ii]);
+         }
+      }
+    }
+
+    // scatter to the PEs
+    atlas::Field & fld = atlasFieldSet_.field(varName);
+    fspace.scatter(globalData, fld);
+
+    // apply mask from read in landmask
+    if ( geom_.extraFields().has("gmask") ) {
+      oops::Log::info() << "Applying landmask to variable: " << varName << std::endl;
+      atlas::Field mask_field = geom_.extraFields()["gmask"];
+      auto mask = make_view<int, 2>(mask_field);
+      auto fd = make_view<double, 2>(atlasFieldSet_.field(varName));
+      for (int i = 0; i < mask.size(); i++) {
+        if (mask(i, 0) == 0) { fd(i, 0) = missing_; }
+      }
+    }
+
+    // exchange halos
+    fspace.haloExchange(fld);
+  }
+
+  // close file
+  if ( globalData.size() != 0 ) {
+    NC_CHECK(nc_close(ncid));
+  }
 }
 
 // ----------------------------------------------------------------------------
 
 void Fields::write(const eckit::Configuration & conf) const {
-  const atlas::functionspace::StructuredColumns & fspace =
-    static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
+  // get some variables we'll need later
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  atlas::StructuredGrid grid = fspace.grid();
+  atlas::idx_t ny = grid.ny();
+  atlas::idx_t nx = grid.nxmax();
 
-  // TODO(travis) handle multiple fields
-  ASSERT(vars_.size() == 1);  // only handling a single field right now
-  std::string varName = vars_[0];
+  // create a global field valid on the root PE
+  atlas::Field globalData = geom_.functionSpace().createField<double>(
+                       atlas::option::levels(1) |
+                       atlas::option::global());
+  auto fd = make_view<double, 2>(globalData);
 
-  // gather from the PEs
-  atlas::Field globalData = fspace.createField<double>(
-    atlas::option::levels(1) |
-    atlas::option::global());
-  fspace.gather(atlasFieldSet_.field(varName), globalData);
-
-  // The following code block should execute on the root PE only
+  // open the netcdf file on the root pe
+  int ncid, dims[3];
   if ( globalData.size() != 0 ) {
-    int lat, lon, time = 1;
-    std::string filename;
-
-     oops::Log::info() << "In Fields::write(), conf = " << conf << std::endl;
-
     // get filename
+    std::string filename;
     if (!conf.get("filename", filename)) {
-        util::abor1_cpp("Fields::write(), Get filename failed.",
-                        __FILE__, __LINE__);
+      util::abor1_cpp("Fields::write(), Get filename failed.", __FILE__, __LINE__);
     } else {
-      oops::Log::info() << "Fields::write(), filename=" << filename
-                        << std::endl;
+      oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
     }
 
-    // create netCDF file
-    netCDF::NcFile file(filename.c_str(), netCDF::NcFile::replace);
-    if (file.isNull())
-      util::abor1_cpp("Fields::write(), Create netCDF file failed.",
-                      __FILE__, __LINE__);
+    // create file
+    NC_CHECK(nc_create(filename.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
+    NC_CHECK(nc_def_dim(ncid, "time", 1, &dims[0]));
+    NC_CHECK(nc_def_dim(ncid, "lat", ny, &dims[1]));
+    NC_CHECK(nc_def_dim(ncid, "lon", nx, &dims[2]));
 
-    // define dims
-    lat = fspace.grid().ny();
-    lon = ((atlas::RegularLonLatGrid)(fspace.grid())).nx();
+    // TODO(travis) save lat/lon as well
+  }
 
-    // unlimited dim if without size parameter, then it'll be 0,
-    // what about the size?
-    netCDF::NcDim timeDim = file.addDim("time", 1);
-    netCDF::NcDim latDim  = file.addDim("lat" , lat);
-    netCDF::NcDim lonDim  = file.addDim("lon" , lon);
-    if (timeDim.isNull() || latDim.isNull() || lonDim.isNull())
-      util::abor1_cpp("Fields::write(), Define dims failed.",
-                      __FILE__, __LINE__);
-
-    std::vector<netCDF::NcDim> dims;
-    dims.push_back(timeDim);
-    dims.push_back(latDim);
-    dims.push_back(lonDim);
-
-    // inside use double, read/write use float
-    // to make it consistent with the netCDF files.
-    netCDF::NcVar ncVar = file.addVar(std::string(varName),
-                                      netCDF::ncFloat, dims);
-
-    // define units atts for data vars
+  // for each variable
+  for (int s = 0; s < vars_.size(); s++) {
+    const std::string varName = vars_[s];
     const float fillvalue = -32768.0;
-    ncVar.putAtt("units", "K");
-    ncVar.putAtt("_FillValue", netCDF::NcFloat(), fillvalue);
-    ncVar.putAtt("missing_value", netCDF::NcFloat(), fillvalue);
 
-    // write data to the file
-    auto fd = atlas::array::make_view<double, 2>(globalData);
-    float data[time][lat][lon];
-    int idx = 0;
-    for (int j = lat-1; j >= 0; j--)
-      for (int i = 0; i < lon; i++) {
-        if (fd(idx, 0) == missing_) {
-          data[0][j][i] = fillvalue;
-        } else {
-          data[0][j][i] = static_cast<float>(fd(idx, 0));
+    // gather the data to root PE
+    fspace.gather(atlasFieldSet_.field(varName), globalData);
+
+    if ( globalData.size() != 0 ) {
+      // convert the data
+      float data[1][ny][nx];
+      for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < grid.nx(ny-1-j); i++) {
+          atlas::idx_t idx = grid.index(i, ny-1-j);
+
+          if (fd(idx, 0) == missing_) {
+            data[0][j][i] = fillvalue;
+          } else {
+            data[0][j][i] = static_cast<float>(fd(idx, 0));
+          }
         }
-        idx++;
       }
 
-    ncVar.putVar(data);
+      // save to file
+      int varid;
+      NC_CHECK(nc_def_var(ncid, varName.c_str(), NC_FLOAT, 3, dims, &varid));
+      NC_CHECK(nc_def_var_fill(ncid, varid, NC_FILL, &fillvalue));
+      NC_CHECK(nc_put_var(ncid, varid, data));
+    }
+  }
 
-    oops::Log::info() << "Fields::write(), Successfully write data to file!"
-                      << std::endl;
+  // done, close file
+  if ( globalData.size() != 0 ) {
+    NC_CHECK(nc_close(ncid));
   }
 }
 
@@ -362,6 +340,10 @@ void Fields::write(const eckit::Configuration & conf) const {
 
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   const int size = geom_.functionSpace().size();
+
+  fset.clear();
+
+  // copy each field
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
     ASSERT(atlasFieldSet_.has(name));
@@ -369,6 +351,8 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
     atlas::Field fld = geom_.functionSpace().createField<double>(
                         atlas::option::levels(1) |
                         atlas::option::name(name));
+    atlas::Field fld_src = atlasFieldSet_.field(name);
+    geom_.functionSpace().haloExchange(fld_src);
 
     // set field metadata
     // TODO(travis) read these in from a configuration file so they aren't hardcoded??
@@ -380,9 +364,10 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
     // TODO(travis) can I avoid the copy and just add the field to the other fset?
     auto fd  = make_view<double, 2>(fld);
-    auto fd2 = make_view<double, 2>(atlasFieldSet_.field(name));
-    for (int j = 0; j < size; j++)
+    auto fd2 = make_view<double, 2>(fld_src);
+    for (int j = 0; j < size; j++) {
       fd(j, 0) = fd2(j, 0);
+    }
 
     fset.add(fld);
   }
@@ -392,23 +377,20 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
 void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
   const int size = geom_.functionSpace().size();
+
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto & fld = atlasFieldSet_.field(name);
+    auto fd    = make_view<double, 2>(fld);
     auto fd_in = make_view<double, 2>(fset.field(name));
-
     for (int j = 0; j < size; j++) {
-      if (fd(j, 0) == missing_ || fd_in(j, 0) == missing_)
-        fd(j, 0) = missing_;
-      else
         fd(j, 0) += fd_in(j, 0);
     }
-  }
 
-  // TODO(travis) adjoint halo exchange
-  // atlasFieldSet_.adjointHaloExchange();
+    geom_.functionSpace().adjointHaloExchange(fld);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -419,12 +401,15 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fd    = make_view<double, 2>(atlasFieldSet_.field(name));
+    auto fld   = atlasFieldSet_.field(name);
+    auto fd    = make_view<double, 2>(fld);
     auto fd_in = make_view<double, 2>(fset.field(name));
 
     for (int j = 0; j < size; j++) {
       fd(j, 0) = fd_in(j, 0);
     }
+
+    geom_.functionSpace().haloExchange(fld);
   }
 }
 
@@ -434,19 +419,20 @@ void Fields::print(std::ostream & os) const {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     auto fd = make_view<double, 2>(atlasFieldSet_.field(v));
-    double mean = 0.0, sum = 0.0,
-          min = std::numeric_limits<double>::max(),
-          max = std::numeric_limits<double>::min();
+    auto fd_halo = make_view<int, 1>(geom_.functionSpace().ghost());
+    double mean = 0.0, sum = 0.0, min = 9e90, max = -9e90;
     int nValid = 0;
 
-    for (int i = 0; i < size; i++)
-      if (fd(i, 0) != missing_) {
+    for (int i = 0; i < size; i++) {
+      if (fd(i, 0) != missing_ && fd_halo(i) == 0)
+      {
         if (fd(i, 0) < min) min = fd(i, 0);
         if (fd(i, 0) > max) max = fd(i, 0);
 
         sum += fd(i, 0);
         nValid++;
       }
+    }
 
     // gather results across PEs
     oops::mpi::world().allReduceInPlace(nValid, eckit::mpi::Operation::SUM);
