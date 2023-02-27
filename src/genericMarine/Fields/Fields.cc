@@ -65,7 +65,6 @@ void Fields::updateFields(const oops::Variables & vars) {
                           atlas::option::name(vars[v]));
       auto fd = make_view<double, 2>(fld);
       fd.assign(0.0);
-      fld.haloExchange();
       fset.add(fld);
     }
   }
@@ -210,11 +209,10 @@ void Fields::read(const eckit::Configuration & conf) {
     NC_CHECK(nc_inq_dimlen(ncid, varid, &lat));
     NC_CHECK(nc_inq_dimid(ncid, "lon", &varid));
     NC_CHECK(nc_inq_dimlen(ncid, varid, &lon));
-    {
-      // sanity check
-      if (time != 1 || lat != ny || lon != nx) {
-        util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx", __FILE__, __LINE__);
-      }
+
+    // sanity check
+    if (time != 1 || lat != ny || lon != nx) {
+      util::abor1_cpp("Fields::read(), lat!=ny or lon!=nx", __FILE__, __LINE__);
     }
   }
 
@@ -224,20 +222,19 @@ void Fields::read(const eckit::Configuration & conf) {
   for (std::string varName : varNames) {
     oops::Log::info() << "Reading variable: " << varName << std::endl;
 
-    // get data
+    // get data on root PE
     if ( globalData.size() != 0 ) {
       int varid;
-      float data[ny][nx];  // TODO(travis) not safe if was a double
+      float data[ny][nx];  // TODO(travis) not safe if input was a double
       NC_CHECK(nc_inq_varid(ncid, varName.c_str(), &varid));
       NC_CHECK(nc_get_var(ncid, varid, data));
 
       // TODO(travis) mask missing values?
 
-      // float to double
-      // invert the y axis on incoming data
+      // copy float to double, and invert the y axis on incoming data
       for (atlas::idx_t jj = 0; jj < ny; jj++) {
-        for (atlas::idx_t ii = 0; ii < grid.nx(ny-1-jj); ii++){
-             fd(grid.index(ii,ny-1-jj), 0) = static_cast<double>(data[jj][ii]);
+        for (atlas::idx_t ii = 0; ii < grid.nx(ny-1-jj); ii++) {
+             fd(grid.index(ii, ny-1-jj), 0) = static_cast<double>(data[jj][ii]);
          }
       }
     }
@@ -271,10 +268,10 @@ void Fields::read(const eckit::Configuration & conf) {
 
 void Fields::write(const eckit::Configuration & conf) const {
   // get some variables we'll need later
-  const atlas::functionspace::StructuredColumns & fspace =
-    static_cast<atlas::functionspace::StructuredColumns>(geom_.functionSpace());
-  const int ny = static_cast<int>(fspace.grid().ny());
-  const int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  atlas::StructuredGrid grid = fspace.grid();
+  atlas::idx_t ny = grid.ny();
+  atlas::idx_t nx = grid.nxmax();
 
   // create a global field valid on the root PE
   atlas::Field globalData = geom_.functionSpace().createField<double>(
@@ -313,15 +310,15 @@ void Fields::write(const eckit::Configuration & conf) const {
     if ( globalData.size() != 0 ) {
       // convert the data
       float data[1][ny][nx];
-      int idx = 0;
-      for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
+      for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < grid.nx(ny-1-j); i++) {
+          atlas::idx_t idx = grid.index(i, ny-1-j);
+
           if (fd(idx, 0) == missing_) {
             data[0][j][i] = fillvalue;
           } else {
             data[0][j][i] = static_cast<float>(fd(idx, 0));
           }
-          idx++;
         }
       }
 

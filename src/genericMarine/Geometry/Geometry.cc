@@ -40,7 +40,7 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
   // create grid from configuration
-  // NOTE: we have to use "checkerboard"  instead of the default so that the
+  // NOTE: we have to use "checkerboard" instead of the default so that the
   // poles aren't placed completely on a single PE, which breaks the interpolation
   // at the moment due to a bug with redundant points.
   atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
@@ -49,18 +49,19 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
                       atlas::grid::Partitioner("checkerboard"),
                       atlas::option::halo(GEOM_HALO_SIZE) );
   atlas::functionspace::StructuredColumns fs(functionSpace_);
-  auto fd_ghost = atlas::array::make_view<int, 1>(fs.ghost());
+  auto vGhost = atlas::array::make_view<int, 1>(fs.ghost());
+  auto vLonlat = atlas::array::make_view<double, 2>(fs.lonlat());
 
   // debugging information about the grid
-  double lat[2]={9e9,-9e9}, lon[2]={9e9,-9e9}, hLat[2]={9e9,-9e9}, hLon[2]={9e9,-9e9};
-  auto fd = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+  #define LL_INIT {9e9, -9e9}
+  double lat[2] = LL_INIT, lon[2] = LL_INIT, hLat[2] = LL_INIT, hLon[2] = LL_INIT;
   for (int i = 0; i < functionSpace_.size(); i++) {
-    hLon[0] = std::min(hLon[0], fd(i,0)); hLon[1] = std::max(hLon[1], fd(i,0));
-    hLat[0] = std::min(hLat[0], fd(i,1)); hLat[1] = std::max(hLat[1], fd(i,1));
-    if(fd_ghost(i)) continue;
+    hLon[0] = std::min(hLon[0], vLonlat(i, 0)); hLon[1] = std::max(hLon[1], vLonlat(i, 0));
+    hLat[0] = std::min(hLat[0], vLonlat(i, 1)); hLat[1] = std::max(hLat[1], vLonlat(i, 1));
+    if (vGhost(i)) continue;
 
-    lon[0] = std::min(lon[0], fd(i,0)); lon[1] = std::max(lon[1], fd(i,0));
-    lat[0] = std::min(lat[0], fd(i,1)); lat[1] = std::max(lat[1], fd(i,1));
+    lon[0] = std::min(lon[0], vLonlat(i, 0)); lon[1] = std::max(lon[1], vLonlat(i, 0));
+    lat[0] = std::min(lat[0], vLonlat(i, 1)); lat[1] = std::max(lat[1], vLonlat(i, 1));
   }
   oops::Log::debug() << "grid      (Lat)/(Lon): (" << lat[0] << ", " << lat[1] << ") / ("
                      << lon[0] << " , " << lon[1] << ")"<< std::endl;
@@ -77,24 +78,23 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   // Temporary approximation solution, for a global
   // regular latlon grid, need to change if involved with other types of grid.
   double dx = 2. * M_PI * atlas::util::DatumIFS::radius() / fs.grid().nxmax();
-  auto lonlat_data = atlas::array::make_view<double, 2>(fs.lonlat());
   atlas::Field area = functionSpace().createField<double>(
       atlas::option::levels(1) | atlas::option::name("area"));
-  auto area_data = atlas::array::make_view<double, 2>(area);
+  auto vArea = atlas::array::make_view<double, 2>(area);
   for (int i=0; i < functionSpace().size(); i++) {
-    double lat = lonlat_data(i,1);
+    double lat = vLonlat(i, 1);
     if (lat > 90) lat = 180 - lat;
     if (lat < -90) lat = -180 - lat;
-    area_data(i, 0) = dx*dx*cos(lat*M_PI/180.);
+    vArea(i, 0) = dx*dx*cos(lat*M_PI/180.);
   }
   extraFields_.add(area);
 
   // vertical unit
-  atlas::Field fld = fs.createField<double>(
+  atlas::Field vunit = fs.createField<double>(
     atlas::option::levels(1) | atlas::option::name("vunit"));
-  auto fld_data = atlas::array::make_view<double, 2>(fld);
-  fld_data.assign(1.0);
-  extraFields_.add(fld);
+  auto vVunit = atlas::array::make_view<double, 2>(vunit);
+  vVunit.assign(1.0);
+  extraFields_.add(vunit);
 
   // add field for rossby radius
   if (conf.has("rossby radius file")) {
@@ -103,16 +103,15 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
 
   // halo mask (needed for SABER)
   // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
-  atlas::Field halo = functionSpace().createField<int>(
+  atlas::Field hmask = functionSpace().createField<int>(
       atlas::option::levels(1) | atlas::option::name("hmask"));
-  auto halo_data = atlas::array::make_view<int, 2>(halo);
-  halo_data.assign(0);
-  for (int i=0; i < functionSpace().size(); i++) {
-    if (fd_ghost(i)) continue;
-    halo_data(i,0) = 1;
+  auto vHmask = atlas::array::make_view<int, 2>(hmask);
+  vHmask.assign(0);
+  for (int i=0; i < fs.size(); i++) {
+    if (vGhost(i)) continue;
+    vHmask(i, 0) = 1;
   }
-  extraFields_.add(halo);
-
+  extraFields_.add(hmask);
 }
 
 // ----------------------------------------------------------------------------
@@ -136,7 +135,7 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
                                 atlas::option::global());
 
   const int size = functionSpace().size();
-  auto fd = atlas::array::make_view<int, 2>(globalLandMask);
+  auto vGlobalLandMask = atlas::array::make_view<int, 2>(globalLandMask);
 
   // read file only on the root PE.
   if (globalLandMask.size() != 0) {
@@ -174,39 +173,41 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
     int idx = 0;
     for (int j = lat-1; j >= 0; j--)
       for (int i = 0; i < lon; i++) {
-        fd(idx++, 0) = dataLandMask[j][i];
+        vGlobalLandMask(idx++, 0) = dataLandMask[j][i];
       }
   }
 
   // scatter to the PEs
   // gmask is needed for SABER
-  atlas::Field fld = functionSpace().createField<int>(
+  atlas::Field gmask = functionSpace().createField<int>(
                      atlas::option::levels(1) |
                      atlas::option::name("gmask"));
-  functionSpace_.scatter(globalLandMask, fld);
-  functionSpace().haloExchange(fld);
-  extraFields_.add(fld);
+  functionSpace_.scatter(globalLandMask, gmask);
+  functionSpace().haloExchange(gmask);
+  extraFields_.add(gmask);
 
   // create a floating point version
   // mask is needed for OOPS interpolation
-  atlas::Field fldDbl = functionSpace().createField<double>(
+  atlas::Field mask = functionSpace().createField<double>(
                         atlas::option::levels(1) |
                         atlas::option::name("mask"));
-  auto fdi = atlas::array::make_view<int, 2>(fld);
-  auto fdd = atlas::array::make_view<double, 2>(fldDbl);
+  auto vGmask = atlas::array::make_view<int, 2>(gmask);
+  auto vMask = atlas::array::make_view<double, 2>(mask);
   for (int j = 0; j < size; j++)
-    fdd(j, 0) = static_cast<double>(fdi(j, 0));
-  extraFields_.add(fldDbl);
+    vMask(j, 0) = static_cast<double>(vGmask(j, 0));
+  extraFields_.add(mask);
 }
 
 // ----------------------------------------------------------------------------
 
 void Geometry::print(std::ostream & os) const {
+  // get some variables we'll need later
   atlas::functionspace::StructuredColumns fspace(functionSpace_);
+  atlas::StructuredGrid grid = fspace.grid();
+  atlas::idx_t ny = grid.ny();
+  atlas::idx_t nx = grid.nxmax();
 
   // global size
-  int ny = static_cast<int>(fspace.grid().ny());
-  int nx = static_cast<int>(((atlas::RegularLonLatGrid&)(fspace.grid())).nx() );
   os << "Geometry: nx = " << nx << ", ny = " << ny << std::endl;
 
   // count grid points on local PE
@@ -287,9 +288,9 @@ atlas::Field Geometry::interpToGeom(
     atlas::option::levels(1));
   auto dstView = atlas::array::make_view<double, 2>(dstField);
   auto dstLonLat = atlas::array::make_view<double, 2>(functionSpace().lonlat());
-  auto fd_halo = atlas::array::make_view<int, 1>(functionSpace_.ghost());
+  auto vGhost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
   for (int i=0; i < functionSpace().size(); i++) {
-    if (fd_halo(i)) continue;
+    if (vGhost(i)) continue;
 
     eckit::geometry::Point2 dstPoint({dstLonLat(i, 0), dstLonLat(i, 1)});
     eckit::geometry::Point3 dstPoint3D;
@@ -311,6 +312,7 @@ atlas::Field Geometry::interpToGeom(
     dstView(i, 0) = sumDistVal / sumDist;
   }
 
+  functionSpace_.haloExchange(dstField);
   return dstField;
 }
 
@@ -324,20 +326,20 @@ void Geometry::latlon(std::vector<double> &lats, std::vector<double> & lons,
   lons.resize(size);
 
   // get the list of lat/lons
-  auto fd_lonlat = atlas::array::make_view<double, 2>(fs.lonlat());
-  auto fd_halo = atlas::array::make_view<int, 1>(fs.ghost());
+  auto vLonlat = atlas::array::make_view<double, 2>(fs.lonlat());
+  auto vGhost = atlas::array::make_view<int, 1>(fs.ghost());
   int j = 0;
   for (size_t i=0; i < fs.size(); i++) {
     // skip if a halo point, and if we don't want halo points
-    if (!halo && fd_halo(i)) continue;
+    if (!halo && vGhost(i)) continue;
 
-    double lon = fd_lonlat(i, 0);
-    double lat = fd_lonlat(i, 1);
+    double lon = vLonlat(i, 0);
+    double lat = vLonlat(i, 1);
 
     // TODO(travis) don't do this, how should the halos work at the poles?
     // this is a hack, and is wrong. Wrap the halo points beyond the poles.
-    if (fd_halo(i) && lat < -90 ) { lat = -180. - lat; lon += 180.; }
-    if (fd_halo(i) && lat > 90 ) { lat = 180. - lat; lon += 180.; }
+    if (vGhost(i) && lat < -90 ) { lat = -180. - lat; lon += 180.; }
+    if (vGhost(i) && lat > 90 ) { lat = 180. - lat; lon += 180.; }
     // if (lon > 180) lon -= 360;
 
     lats[j] = lat;
