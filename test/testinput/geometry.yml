@@ -4,9 +4,11 @@ geometry:
     domain:
       type: global
       west: -180
-
   landmask:
     filename: data_static/landmask_1p0.nc
+  rossby radius file: data_static/rossby_radius.dat
+  output:
+    filename: geometry.nc
 
 test:
   reference filename: testref/geometry.ref

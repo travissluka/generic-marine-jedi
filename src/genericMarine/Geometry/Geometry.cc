@@ -11,9 +11,11 @@
 #include "netcdf"
 
 #include "genericMarine/Geometry/Geometry.h"
+#include "genericMarine/Increment/Increment.h"
 
 #include "eckit/container/KDTree.h"
 #include "eckit/config/Configuration.h"
+#include "eckit/config/YAMLConfiguration.h"
 
 #include "atlas/grid.h"
 #include "atlas/array.h"
@@ -21,6 +23,7 @@
 #include "atlas/option.h"
 #include "atlas/functionspace.h"
 #include "atlas/util/Config.h"
+#include "atlas/util/KDTree.h"
 
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
@@ -68,12 +71,6 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   oops::Log::debug() << "grid halo (Lat)/(Lon): (" << hLat[0] << ", " << hLat[1] << ") / ("
                      << hLon[0] << " , " << hLon[1] << ")"<< std::endl;
 
-  // load landmask, after this call the fields "mask" (floating point) and "gmask" (integer)
-  // will be added. We need both because bump and the interpolation have different requirements
-  if (conf.has("landmask.filename")) {
-    loadLandMask(conf);
-  }
-
   // calulate grid area
   // Temporary approximation solution, for a global
   // regular latlon grid, need to change if involved with other types of grid.
@@ -96,11 +93,6 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   vVunit.assign(1.0);
   extraFields_.add(vunit);
 
-  // add field for rossby radius
-  if (conf.has("rossby radius file")) {
-    readRossbyRadius(conf.getString("rossby radius file"));
-  }
-
   // halo mask (needed for SABER)
   // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
   atlas::Field hmask = functionSpace().createField<int>(
@@ -112,6 +104,25 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
     vHmask(i, 0) = 1;
   }
   extraFields_.add(hmask);
+
+  // Load/calculate other marine specific fields
+  loadLandMask(conf);  // note, needs 'landmask' section of config
+  calcDistToCoast();
+  if (conf.has("rossby radius file")) {
+    readRossbyRadius(conf.getString("rossby radius file")); }
+
+  // save geometry diagnostics
+  if (conf.has("output")) {
+    std::vector<std::string> vars;
+    vars.push_back("area");
+    vars.push_back("mask");
+    if (extraFields_.has("rossby_radius")) {
+      vars.push_back("rossby_radius"); }
+    vars.push_back("distanceToCoast");
+    Increment inc(*this, oops::Variables(vars), util::DateTime());
+    inc.fromFieldSet(extraFields_);
+    inc.write(conf.getSubConfiguration("output"));
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -127,6 +138,12 @@ Geometry::~Geometry() {}
 
 // ----------------------------------------------------------------------------
 
+/**
+ * Load the landmask
+ *
+ * After this call the fields "mask" (floating point) and "gmask" (integer) will be added.
+ * We need both because bump and the interpolation have different requirements
+ */
 void Geometry::loadLandMask(const eckit::Configuration &conf) {
   // use an globalLandMask to read the data on root PE only.
   atlas::Field globalLandMask = functionSpace().createField<int>(
@@ -355,5 +372,61 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
   return lvls;
 }
 
+// ----------------------------------------------------------------------------
+/// Calculate the distance from a grid cell to the closest land point.
+/// This uses the "gmask" field that is assumed to already be loaded. Points that
+/// are entirely on land will return 0.
+void Geometry::calcDistToCoast() {
+  const std::string FIELD_NAME = "distanceToCoast";
+  ASSERT(extraFields_.has("gmask"));
+  ASSERT(!extraFields_.has(FIELD_NAME));
+
+  // get things that will be needed later
+  atlas::functionspace::StructuredColumns fspace(functionSpace_);
+  auto vLonLat = atlas::array::make_view<double, 2> (fspace.lonlat());
+  auto vGhost =  atlas::array::make_view<int, 1> (fspace.ghost());
+  auto vGmask =  atlas::array::make_view<int, 2> (extraFields_.field("gmask"));
+
+  // create new field
+  atlas::Field distToCoast = fspace.createField<double>(
+    atlas::option::levels(1) |
+    atlas::option::name(FIELD_NAME));
+  auto vDistToCoast = atlas::array::make_view<double, 2>(distToCoast);
+  extraFields_.add(distToCoast);
+  vDistToCoast.assign(0.0);
+
+  // get lat/lon of land points on all PEs
+  std::vector<double> lats, lons;
+  {
+    for (atlas::idx_t i = 0; i < fspace.size(); i++) {
+      if (vGhost(i) || vGmask(i, 0) ) continue;
+      lons.push_back(vLonLat(i, 0));
+      lats.push_back(vLonLat(i, 1));
+    }
+    oops::mpi::allGatherv(comm_, lats);
+    oops::mpi::allGatherv(comm_, lons);
+  }
+
+  // create KD tree, including halo points
+  atlas::util::IndexKDTree kdTree;
+  {
+    const size_t npoints = lats.size();
+    std::vector<size_t> indx(npoints);
+    for (size_t jj = 0; jj < npoints; ++jj) indx[jj] = jj;
+    kdTree.build(lons, lats, indx);
+  }
+
+  // find closest land point for each grid point
+  atlas::util::Earth earth;
+  for (atlas::idx_t i = 0; i < fspace.size(); i++) {
+    if (vGhost(i) || !vGmask(i, 0) ) continue;
+    atlas::PointLonLat ll(vLonLat(i, 0), vLonLat(i, 1));
+    ll.normalise();
+    const int idx = kdTree.closestPoint(ll).payload();
+    atlas::PointLonLat dst(lons[idx], lats[idx]);
+    double dist = earth.distance(ll, dst);
+    vDistToCoast(i, 0) = dist;
+  }
+}
 // ----------------------------------------------------------------------------
 }  // namespace genericMarine
