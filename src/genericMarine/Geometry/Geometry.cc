@@ -427,6 +427,9 @@ void Geometry::calcDistToCoast() {
     double dist = earth.distance(ll, dst);
     vDistToCoast(i, 0) = dist;
   }
+
+  // done, exchange halo
+  fspace.haloExchange(distToCoast);
 }
 // ----------------------------------------------------------------------------
 }  // namespace genericMarine
