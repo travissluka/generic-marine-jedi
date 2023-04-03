@@ -8,32 +8,33 @@ set -eu
 EXP_DIR=$(readlink -f .) # assume experiment directory is the directory
                          # that this script is in
 
-EXP_START_DATE=20160101Z12  # start date, in YYYYMMDDZHH format
-EXP_END_DATE=20160131Z12    # end date,   in YYYYMMDDZHH format
+EXP_START_DATE=20180415Z12  # start date, in YYYYMMDDZHH format
+EXP_END_DATE=20180416Z12    # end date,   in YYYYMMDDZHH format
 
-# location of root UMD-SST source directory
+# location of root GenericMarineJEDI source directory
 # (not needed by this script, other than the subsequent default IC/landmask locations)
-UMDSST_SRC_DIR=/home/tsluka/work/umdsst/umd-sst.src
+MARINEJEDI_SRC_DIR=$(readlink -f ../)
 
-# location of the UMD-SST binary files
-UMDSST_BIN_DIR=/home/tsluka/work/umdsst/umd-sst.release/bin
+# location of the GenericMarineJEDI binary files
+MARINEJEDI_BIN_DIR=$(readlink -f ../build/bin)
 
 # observation locations, note that %Y %m %d %H will be replaced with the
 # date/time of each cycle
-OBS_FILE=$EXP_DIR/obs/%Y%m%d%H0000-ESACCI-L3C_GHRSST-SSTskin-AVHRR19_G-CDR2.1_night-v02.0-fv01.0.nc
-
-OBS_THINNING=0.8 # percent of obs to discard (range: 0.0 - 1.0 )
+OBS_FILE=$EXP_DIR/obs/sst_noaa19_%Y%m%d.nc
 
 # initial background used for the first cycle
-IC_FILE=$UMDSST_SRC_DIR/test/Data/19850101_regridded_sst.nc
+IC_FILE=$MARINEJEDI_SRC_DIR/test/data_static/sst_1p0.nc
 
-# land mask file
-LANDMASK_FILE=$UMDSST_SRC_DIR/test/Data/landmask.nc
-
-ROSSBYRADIUS_FILE=$UMDSST_SRC_DIR/test/Data/rossby_radius.dat
+# land mask and rossby radius file
+LANDMASK_FILE=$MARINEJEDI_SRC_DIR/test/data_static/landmask_1p0.nc
+ROSSBYRADIUS_FILE=$MARINEJEDI_SRC_DIR/test/data_static/rossby_radius.dat
 
 # temporary working files, that are deleted after each cycle is finished
 SCRATCH_DIR=$EXP_DIR/SCRATCH
+
+# MPI command to run will be machine dependent
+MPI_PE=8
+MPI_CMD="mpirun -n $MPI_PE"
 
 #-------------------------------------------------------------------------------
 # END of user configurables
@@ -104,27 +105,34 @@ while true; do
     fi
 
     # initialize bump if not already done so
+    # TODO, the bump files are dependent on the number of PEs, so if you change PEs, you have
+    # to regenerate the bump directory
     BUMP_DIR=$EXP_DIR/bump
     if [[ ! -d "$BUMP_DIR" ]]; then
         echo "Initializing BUMP..."
         mkdir bump
-        cp $EXP_DIR/config/staticbinit.yaml .
-        mpirun $UMDSST_BIN_DIR/umdsst_staticbinit.x staticbinit.yaml
+        cp $EXP_DIR/config/{setcorscales,errorcovariance_training}.yaml .        
+        
+        # generate horizontal length scales, based on rossby radius
+        $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_setcorscales.x setcorscales.yaml
+
+        # initialize NICAS correlation operator
+        $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_errorcovariance_training.x errorcovariance_training.yaml
+
         mv bump $BUMP_DIR
     fi
     ln -s $BUMP_DIR bump
 
-    # run ioda converter
+    # link the obserations
     obs_file=$(date -ud "$ANA_DATE" +$OBS_FILE)
-    $UMDSST_BIN_DIR/gds2_sst2ioda.py -i $obs_file -o obs_ioda.nc \
-        -d $ANA_DATE_YMDH --sst -t $OBS_THINNING
+    ln -s $obs_file obs.nc    
 
     # run the var
     mkdir -p obs_out
-    cp $EXP_DIR/config/var.yaml .
+    cp $EXP_DIR/config/{var,obsop_name_map}.yaml .
     sed -i "s/__DA_WINDOW_START__/${DA_WINDOW_START}/g" var.yaml
     sed -i "s/__ANA_DATE__/${ANA_DATE}/g" var.yaml
-    mpirun $UMDSST_BIN_DIR/umdsst_var.x var.yaml
+    $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_var.x var.yaml
 
     # move the output files
     ana_file=$EXP_DIR/ana/ana.${ANA_DATE_YMDH}.nc
