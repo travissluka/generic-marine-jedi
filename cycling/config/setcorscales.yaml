@@ -1,0 +1,30 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: landmask.nc
+  rossby radius file: rossby_radius.dat
+
+variables: [seaSurfaceTemperature]
+
+scales:
+  # these values are probably larger than you want, but are
+  # here just for testing.
+  base value: 250.0e3
+  rossby mult: 2.0
+  min grid mult: 2.0
+  min value: 100.0e3
+  max value: 1e20
+
+output:
+  rh:
+    filename: bump_rh.nc
+  rv:
+    filename: bump_rv.nc
