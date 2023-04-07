@@ -70,6 +70,7 @@ namespace genericMarine {
                               const std::vector<double> &) const;
     void loadLandMask(const eckit::Configuration &);
     void readRossbyRadius(const std::string &);
+    void calcDistToCoast();
     void print(std::ostream &) const;
 
     // private variables
