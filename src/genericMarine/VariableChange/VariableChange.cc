@@ -43,7 +43,15 @@ void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
       for (int j=0; j < size; j++) {
         dst(j, 0) = static_cast<double>(src(j, 0));
       }
+
+    } else if (name == "distanceToCoast") {
+      auto src = atlas::array::make_view<double, 2>(
+        geom_.extraFields().field("distanceToCoast"));
+      for (int j=0; j < size; j++) {
+
+        dst(j, 0) = src(j, 0); }
     } else {
+
       ASSERT(1 == 2);
     }
   }
