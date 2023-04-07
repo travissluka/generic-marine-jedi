@@ -57,10 +57,19 @@ cost function:
         name: Identity
         observation alias file: testinput/obsop_name_map.yml
       obs filters:
-      - filter: Domain Check
+      - # remove observations on/near land
+        filter: Domain Check
         where:
         - variable: {name: GeoVaLs/sea_area_fraction}
           minvalue: 0.5
+      - # Inflate observation error for obs near the coast
+        filter: Perform Action
+        where:
+        - variable: {name: GeoVaLs/distanceToCoast}
+          maxvalue: 500e3
+        action:
+          name: inflate error
+          inflation factor: 5.0
 
 variational:
   minimizer:
