@@ -7,7 +7,7 @@
 # genericMarine (JEDI based generic DA using file I/O)
 ################################################################################
 cmake_minimum_required( VERSION 3.12 )
-project( genericMarine VERSION 2023.2.0 LANGUAGES C CXX Fortran)
+project( genericMarine VERSION 2023.4.0 LANGUAGES C CXX Fortran)
 
 find_package( ecbuild 3.6 REQUIRED)
 include( ecbuild_system NO_POLICY_SCOPE )
@@ -21,13 +21,13 @@ include( genericMarine_compiler_flags )
 # Dependencies
 ################################################################################
 find_package( NetCDF REQUIRED COMPONENTS C CXX)
-find_package( eckit  1.11.6   REQUIRED)
-find_package( fckit  0.7.0    REQUIRED)
-find_package( atlas  0.20.2   REQUIRED)
-find_package( oops   1.5.0    REQUIRED)
-find_package( saber  1.5.0    REQUIRED)
-find_package( ioda   2.4.0    REQUIRED)
-find_package( ufo    1.5.0    REQUIRED)
+find_package( eckit  1.20.2   REQUIRED)
+find_package( fckit  0.9.5    REQUIRED)
+find_package( atlas  0.31.1   REQUIRED)
+find_package( oops   1.6.0    REQUIRED)
+find_package( saber  1.6.0    REQUIRED)
+find_package( ioda   2.5.0    REQUIRED)
+find_package( ufo    1.6.0    REQUIRED)
 
 
 ################################################################################
