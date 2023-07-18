@@ -28,7 +28,7 @@ cost function:
     saber central block:
       # The correlation operator
       saber block name: BUMP_NICAS
-      bump:
+      read:
         io:
           data directory: data_generated/errorcovariance_training
         drivers:
