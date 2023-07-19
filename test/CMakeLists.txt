@@ -121,9 +121,13 @@ genericmarine_add_test( NAME state
 genericmarine_add_test( NAME increment
                  SRC TestIncrement.cc )
 
+genericmarine_add_test( NAME model
+                 SRC TestModel.cc )
+
 genericmarine_add_test( NAME modelauxcontrol
                  SRC TestModelAuxControl.cc
                  CFG modelaux.yml )
+
 
 # genericmarine_add_test( NAME getvalues
 #                  SRC TestGetValues.cc )

@@ -1,0 +1,28 @@
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: data_static/landmask_1p0.nc
+  rossby radius file: data_static/rossby_radius.dat
+
+model aux control: {}
+
+model test:
+  forecast length: P1D
+  final norm: 17.618557796174457
+  tolerance: 1e-12
+  
+model:
+  name: SimpleWave
+  tstep: PT1H
+  
+initial condition:
+  date: 2018-04-15T12:00:00Z
+  filename: data_static/sst_1p0.nc
+  state variables: [seaSurfaceTemperature]
+
+output:
+  frequency: PT6H
