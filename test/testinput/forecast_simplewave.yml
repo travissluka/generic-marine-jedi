@@ -1,0 +1,29 @@
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: data_static/landmask_1p0.nc
+  rossby radius file: data_static/rossby_radius.dat
+
+model:
+  name: SimpleWave
+  tstep: PT1H
+
+initial condition:
+  date: &ic_date 2018-04-15T12:00:00Z
+  filename: data_static/sst_1p0.nc
+  state variables: [seaSurfaceTemperature]
+
+forecast length: P1D
+
+output:
+  frequency: PT6H
+  prefix: data_output/forecast
+  date: *ic_date
+
+test:
+  reference filename: testref/forecast_simplewave.ref
+  test output filename: testoutput/forecast_simplewave.ref

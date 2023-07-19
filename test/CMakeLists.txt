@@ -175,23 +175,23 @@ genericmarine_add_test( NAME modelauxcontrol
 # Test of executables
 #================================================================================
 
-genericmarine_add_test( NAME hofx3d
-                 EXE  genericmarine_hofx3d.x )
+genericmarine_add_test( NAME forecast_simplewave 
+                        EXE genericmarine_forecast.x )
 
-# genericmarine_add_test( NAME staticbinit
-#                  EXE  genericmarine_staticbinit.x )
+genericmarine_add_test( NAME hofx3d
+                        EXE  genericmarine_hofx3d.x )
 
 genericmarine_add_test( NAME setcorscales
-                 EXE genericmarine_setcorscales.x )
+                        EXE genericmarine_setcorscales.x )
 
 genericmarine_add_test( NAME errorcovariance_training
-                 EXE genericmarine_errorcovariance_training.x
-                 TEST_DEPENDS test_genericmarine_setcorscales )
+                        EXE genericmarine_errorcovariance_training.x
+                        TEST_DEPENDS test_genericmarine_setcorscales )
 
 genericmarine_add_test( NAME dirac
-                 EXE  genericmarine_dirac.x
-                 TEST_DEPENDS test_genericmarine_errorcovariance_training )
+                        EXE  genericmarine_dirac.x
+                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
 
 genericmarine_add_test( NAME var
-                 EXE  genericmarine_var.x
-                 TEST_DEPENDS test_genericmarine_errorcovariance_training )
+                        EXE  genericmarine_var.x
+                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
