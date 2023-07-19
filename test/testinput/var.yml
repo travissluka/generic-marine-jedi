@@ -83,11 +83,10 @@ variational:
     online diagnostics:
       write increment: true
       increment:
-        filename: data_output/var.inc.nc
-
+        prefix: data_output/var.inc
 
 output:
-  filename: data_output/var.an.nc
+  prefix: data_output/var.an
 
 final:
   diagnostics:

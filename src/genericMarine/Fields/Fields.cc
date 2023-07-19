@@ -23,6 +23,7 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
+#include "oops/util/Duration.h"
 
 using atlas::array::make_view;
 
@@ -282,13 +283,25 @@ void Fields::write(const eckit::Configuration & conf) const {
   // open the netcdf file on the root pe
   int ncid, dims[3];
   if ( globalData.size() != 0 ) {
-    // get filename
+    // generate filename
     std::string filename;
     if (!conf.get("filename", filename)) {
-      util::abor1_cpp("Fields::write(), Get filename failed.", __FILE__, __LINE__);
-    } else {
-      oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
+      std::string tmpStr;
+      if (!conf.get("prefix", tmpStr)) {
+        util::abor1_cpp("Fields::write(), missing \"prefix\" "
+                        "or \"filename\" in config", __FILE__, __LINE__);
+      }
+      filename = tmpStr + ".";
+      if (conf.get("date", tmpStr)) {
+        util::DateTime dt(tmpStr);
+        util::Duration dur = time_ - dt;
+        filename += dt.toStringIO() + "." + dur.toString();
+      } else {
+        filename += time_.toStringIO();
+      }
+      filename += ".nc";
     }
+    oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
 
     // create file
     NC_CHECK(nc_create(filename.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
