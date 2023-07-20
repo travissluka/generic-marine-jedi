@@ -111,15 +111,9 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   if (conf.has("rossby radius file")) {
     readRossbyRadius(conf.getString("rossby radius file")); }
 
-  // save geometry diagnostics
+  // save geometry diagnostics (all the fields in geom!)
   if (conf.has("output")) {
-    std::vector<std::string> vars;
-    vars.push_back("area");
-    vars.push_back("mask");
-    if (extraFields_.has("rossby_radius")) {
-      vars.push_back("rossby_radius"); }
-    vars.push_back("distanceToCoast");
-    Increment inc(*this, oops::Variables(vars), util::DateTime());
+    Increment inc(*this, oops::Variables(extraFields_.field_names()), util::DateTime());
     inc.fromFieldSet(extraFields_);
     inc.write(conf.getSubConfiguration("output"));
   }
@@ -260,17 +254,24 @@ void Geometry::print(std::ostream & os) const {
 void Geometry::readRossbyRadius(const std::string & filename) {
   std::ifstream infile(filename);
   std::vector<eckit::geometry::Point2> lonlat;
-  std::vector<double> vals;
-  double lat, lon, x, val;
+  std::vector<double> rossby_vals, speed_vals;
+  double lat, lon, val1, val2;
 
-  while (infile >> lat >> lon >> x >> val) {
+  // rossby radius file orginally from
+  // https://ceoas.oregonstate.edu/rossby_radius
+  while (infile >> lat >> lon >> val1 >> val2) {
     lonlat.push_back(eckit::geometry::Point2(lon, lat));
-    vals.push_back(val*1.0e3);
+    rossby_vals.push_back(val2*1.0e3);
+    speed_vals.push_back(val1);
   }
 
-  atlas::Field field = interpToGeom(lonlat, vals);
-  field.rename("rossby_radius");
-  extraFields_.add(field);
+  atlas::Field rossby_field = interpToGeom(lonlat, rossby_vals);
+  rossby_field.rename("rossby_radius");
+  extraFields_.add(rossby_field);
+
+  atlas::Field speed_field = interpToGeom(lonlat, speed_vals);
+  speed_field.rename("phase_speed");
+  extraFields_.add(speed_field);
 }
 
 // ----------------------------------------------------------------------------

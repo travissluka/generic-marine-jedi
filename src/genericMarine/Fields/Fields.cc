@@ -414,15 +414,26 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fld   = atlasFieldSet_.field(name);
-    auto fd    = make_view<double, 2>(fld);
-    auto fd_in = make_view<double, 2>(fset.field(name));
+    atlas::Field fld_dst = atlasFieldSet_.field(name);
+    atlas::Field fld_src = fset.field(name);
 
-    for (int j = 0; j < size; j++) {
-      fd(j, 0) = fd_in(j, 0);
+    auto fd    = make_view<double, 2>(fld_dst);
+    // NOTE: this conversion should not be necessary, it is a temporary
+    // workaround. The dst fieldset *should* have the same data type as
+    // the src, but we'll deal with that later (this is only happening
+    // when writing geom out to a file)
+    if (fld_src.datatype() == atlas::array::DataType::real64()) {
+      auto fd_in = make_view<double, 2>(fld_src);
+      for (int j = 0; j < size; j++) {
+        fd(j, 0) = fd_in(j, 0);
+      }
+    } else if  (fld_src.datatype() == atlas::array::DataType::int32()) {
+      auto fd_in = make_view<int, 2>(fld_src);
+      for (int j = 0; j < size; j++) {
+        fd(j, 0) = fd_in(j, 0);
+      }
     }
-
-    geom_.functionSpace().haloExchange(fld);
+    geom_.functionSpace().haloExchange(fld_dst);
   }
 }
 
