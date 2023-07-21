@@ -13,6 +13,8 @@
 #include "genericMarine/Geometry/Geometry.h"
 #include "genericMarine/Increment/Increment.h"
 
+#include "eckit/geometry/Point2.h"
+#include "eckit/geometry/SphereT.h"
 #include "eckit/container/KDTree.h"
 #include "eckit/config/Configuration.h"
 #include "eckit/config/YAMLConfiguration.h"
@@ -71,19 +73,47 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   oops::Log::debug() << "grid halo (Lat)/(Lon): (" << hLat[0] << ", " << hLat[1] << ") / ("
                      << hLon[0] << " , " << hLon[1] << ")"<< std::endl;
 
-  // calulate grid area
-  // Temporary approximation solution, for a global
-  // regular latlon grid, need to change if involved with other types of grid.
-  double dx = 2. * M_PI * atlas::util::DatumIFS::radius() / fs.grid().nxmax();
+  // calculate grid dx, dy, area
+  atlas::Field dx = functionSpace().createField<double>(
+      atlas::option::levels(1) | atlas::option::name("dx"));
+  auto vDx = atlas::array::make_view<double, 2>(dx);
+  atlas::Field dy = functionSpace().createField<double>(
+      atlas::option::levels(1) | atlas::option::name("dy"));
+  auto vDy = atlas::array::make_view<double, 2>(dy);
   atlas::Field area = functionSpace().createField<double>(
       atlas::option::levels(1) | atlas::option::name("area"));
   auto vArea = atlas::array::make_view<double, 2>(area);
-  for (int i=0; i < functionSpace().size(); i++) {
-    double lat = vLonlat(i, 1);
-    if (lat > 90) lat = 180 - lat;
-    if (lat < -90) lat = -180 - lat;
-    vArea(i, 0) = dx*dx*cos(lat*M_PI/180.);
+  eckit::geometry::SphereT<atlas::util::DatumIFS> earth;
+  for (atlas::idx_t j = fs.j_begin(); j < fs.j_end(); j++) {
+    for (atlas::idx_t i = fs.i_begin(j); i < fs.i_end(j); i++) {
+        atlas::idx_t idx = fs.index(i, j);
+        atlas::idx_t idx_im1 = fs.index(i-1, j);
+        atlas::idx_t idx_ip1 = fs.index(i+1, j);
+        atlas::idx_t idx_jm1 = fs.index(i, j-1);
+        atlas::idx_t idx_jp1 = fs.index(i, j+1);
+
+        // these may or may not be correct given how the grid is constructed...
+        // probably close enough though
+
+        vDx(idx, 0) = 0.5 * earth.distance(
+          eckit::geometry::Point2(vLonlat(idx_im1, 0), vLonlat(idx_im1, 1)),
+          eckit::geometry::Point2(vLonlat(idx_ip1, 0), vLonlat(idx_ip1, 1)));
+
+        double lon1 = vLonlat(idx_jp1, 0);
+        double lat1 = vLonlat(idx_jp1, 1);
+        if (lat1 < -90.) { lat1 = -180. - lat1; lon1 += 180.; }
+        double lon2 = vLonlat(idx_jm1, 0);
+        double lat2 = vLonlat(idx_jm1, 1);
+        if (lat2 > 90.) { lat2 = 180. - lat2; lon2 += 180.; }
+        vDy(idx, 0) = 0.5 * earth.distance(
+           eckit::geometry::Point2(lon1, lat1),
+           eckit::geometry::Point2(lon2, lat2));
+
+        vArea(idx, 0) = vDx(idx, 0) * vDy(idx, 0);
+    }
   }
+  extraFields_.add(dx);
+  extraFields_.add(dy);
   extraFields_.add(area);
 
   // vertical unit
@@ -92,6 +122,15 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   auto vVunit = atlas::array::make_view<double, 2>(vunit);
   vVunit.assign(1.0);
   extraFields_.add(vunit);
+
+  // Load/calculate other marine specific fields
+  loadLandMask(conf);  // note, needs 'landmask' section of config
+  calcDistToCoast();
+  if (conf.has("rossby radius file")) {
+    readRossbyRadius(conf.getString("rossby radius file")); }
+
+  // mak sure the halos for all the fields are updated;
+  extraFields_.haloExchange();
 
   // halo mask (needed for SABER)
   // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
@@ -104,12 +143,6 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
     vHmask(i, 0) = 1;
   }
   extraFields_.add(hmask);
-
-  // Load/calculate other marine specific fields
-  loadLandMask(conf);  // note, needs 'landmask' section of config
-  calcDistToCoast();
-  if (conf.has("rossby radius file")) {
-    readRossbyRadius(conf.getString("rossby radius file")); }
 
   // save geometry diagnostics (all the fields in geom!)
   if (conf.has("output")) {
