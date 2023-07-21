@@ -10,17 +10,17 @@ geometry:
 
 model:
   name: SimpleWave
-  tstep: PT1H
+  tstep: P1D
 
 initial condition:
   date: &ic_date 2018-04-15T12:00:00Z
   filename: data_static/sst_1p0.nc
   state variables: [seaSurfaceTemperature]
 
-forecast length: P1D
+forecast length: P5D
 
 output:
-  frequency: PT6H
+  frequency: P1D
   prefix: data_output/forecast
   date: *ic_date
 

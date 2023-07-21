@@ -51,6 +51,9 @@ namespace genericMarine {
     util::Duration tstep_;
     const oops::Variables vars_;
     const Geometry & geom_;
+
+    mutable atlas::FieldSet fs_m1_;
+    atlas::Field dx_;
   };
 
 //-----------------------------------------------------------------------------
