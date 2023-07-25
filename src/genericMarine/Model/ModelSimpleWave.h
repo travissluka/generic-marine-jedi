@@ -46,14 +46,19 @@ namespace genericMarine {
     const util::Duration & timeResolution() const {return tstep_;}
     const oops::Variables & variables() const {return vars_;}
 
+    //
+    atlas::FieldSet setParams() const;
+
+   protected:
+    const Geometry & geom_;
+
    private:
     void print(std::ostream &) const;
     util::Duration tstep_;
-    const oops::Variables vars_;
-    const Geometry & geom_;
+    const oops::Variables vars_;    
 
-    mutable atlas::FieldSet fs_m1_;
-    atlas::Field dx_;
+    atlas::FieldSet params_;  // other user-provided model paramters
+    mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 
 //-----------------------------------------------------------------------------
