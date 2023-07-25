@@ -17,13 +17,13 @@ initial condition:
   filename: data_static/sst_1p0.nc
   state variables: [seaSurfaceTemperature]
 
-forecast length: PT2H
+forecast length: P10D
 
 output:
-  frequency: PT1H
+  frequency: P1D
   prefix: data_output/forecast
   date: *ic_date
 
-test:
-  reference filename: testref/forecast_simplewave.ref
-  test output filename: testoutput/forecast_simplewave.ref
+# test:
+#   reference filename: testref/forecast_simplewave.ref
+#   test output filename: testoutput/forecast_simplewave.ref

@@ -49,13 +49,13 @@ void ModelSimpleWave::initialize(State & xx) const {
 
 // -----------------------------------------------------------------------------
 
-atlas::FieldSet ModelSimpleWave::setParams() const {  
-  // This is a simple test situation, of 0 speed at the poles, increasing to ward the equator
+atlas::FieldSet ModelSimpleWave::setParams() const {
+  // This is a simple test situation, of 0 speed at the poles, increasing toward the equator
   // with a modulation to keep near 0.0 at the coasts
   atlas::FieldSet fset;
-  
+
   // other fields we'll need
-  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());  
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
   auto v_lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
   auto v_halo = atlas::array::make_view<int, 1>(fspace.ghost());
   auto v_coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
@@ -69,14 +69,14 @@ atlas::FieldSet ModelSimpleWave::setParams() const {
   cy_view.assign(0.0);
   fset.add(cx);
   fset.add(cy);
-    
+
   // set a horizontally varying u
   const double lat0 = 80.0;
   const double lat1_val = -1.0;
   const double coast_dist = 300e3;
   for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
     // based on latitude
-    double lat = v_lonlat(idx, 1);    
+    double lat = v_lonlat(idx, 1);
     if (abs(lat) > lat0) {
       cx_view(idx) = 0.0;
     } else {
@@ -94,7 +94,7 @@ atlas::FieldSet ModelSimpleWave::setParams() const {
 // -----------------------------------------------------------------------------
 
 void ModelSimpleWave::step(State & xx, const ModelAuxControl &) const {
-  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());  
+  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
   double missing; missing = util::missingValue(missing);
 
   // get various data views we need
@@ -108,16 +108,16 @@ void ModelSimpleWave::step(State & xx, const ModelAuxControl &) const {
   atlas::FieldSet xx_t0 = util::copyFieldSet(xx_tp1);
   bool leapfrog_init = xx_tm1_.empty();
   if (leapfrog_init) xx_tm1_ = util::copyFieldSet(xx_t0);
-  
+
   // temporary working fields, used later
   atlas::Field dfdx_field = fspace.createField<double>();
   atlas::Field dfdy_field = fspace.createField<double>();
-  auto dfdx = atlas::array::make_view<double, 1>(dfdx_field);  
+  auto dfdx = atlas::array::make_view<double, 1>(dfdx_field);
   auto dfdy = atlas::array::make_view<double, 1>(dfdy_field);
 
   // for each variable in the model
   for (atlas::idx_t var = 0; var < xx_t0.size(); var++) {
-    // various data views we need    
+    // various data views we need
     auto f_t0 = atlas::array::make_view<double,2>(xx_t0[var]);
     auto f_tp1 = atlas::array::make_view<double,2>(xx_tp1[var]);
     auto f_tm1 = atlas::array::make_view<double,2>(xx_tm1_[var]);
@@ -129,119 +129,73 @@ void ModelSimpleWave::step(State & xx, const ModelAuxControl &) const {
       for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
         atlas::idx_t idx = fspace.index(ii, jj);
         atlas::idx_t idx_xp1 = fspace.index(ii+1, jj);
-        atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);          
+        atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);
         atlas::idx_t idx_yp1 = fspace.index(ii, jj+1);
-        atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);          
+        atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
 
         // skip land
-        if (f_tp1(idx,0) == missing) continue;
-        
-        // dx      
+        if (f_t0(idx,0) == missing) continue;
+
+        // df/dx
         if (f_t0(idx_xp1, 0) == missing && f_t0(idx_xm1, 0) == missing) {
           // leave as 0, no neighbors
         } else if (f_t0(idx_xm1, 0) == missing) {
           // no left neighbor
+          dfdx(idx) = (f_t0(idx_xp1, 0) - f_t0(idx, 0)) / dx(idx, 0);
         } else if (f_t0(idx_xp1, 0) == missing) {
           // no right neighbor
+          dfdx(idx) = (f_t0(idx, 0) - f_t0(idx_xm1, 0)) / dx(idx, 0);
         } else {
-          // 2 neighbors, centered difference          
+          // 2 neighbors, centered difference
           dfdx(idx) = (f_t0(idx_xp1, 0) - f_t0(idx_xm1, 0)) / (2.0*dx(idx, 0));
         }
 
-
-  
-  // //         dfdx(idx) = (f_t0(idx_xp1, 0) - f_t0(idx_xm1, 0)) / (2.0*dx(idx, 0));    
-  //        }
-  //        else {
-  //         dfdx(idx) = 3.0;
-  //        }
-  // //       } else if (f_t0(idx_xp1, 0) == missing) {
-  // // //         // dudx = (v_view(idx, 0) - v_view(idx_xm1, 0)) / (2.0*dx_view(idx, 0));
-  // //       } else if (f_t0(idx_xm1, 0) == missing) {
-  // // //         //dudx = (v_view(idx_xp1, 0) - v_view(idx, 0)) / dx_view(idx, 0);
-  // //       }
+        // df/dy
+        if (f_t0(idx_yp1, 0) == missing && f_t0(idx_ym1, 0) == missing) {
+          // leave as 0, no neighbors
+        } else if (f_t0(idx_ym1, 0) == missing) {
+          // no neighbor below
+          dfdy(idx) = (f_t0(idx_yp1, 0) - f_t0(idx, 0)) / dy(idx, 0);
+        } else if (f_t0(idx_yp1, 0) == missing) {
+          // no neighbor above
+          dfdy(idx) = (f_t0(idx, 0) - f_t0(idx_ym1, 0)) / dy(idx, 0);
+        } else {
+          // 2 neighbors, centered difference
+          dfdy(idx) = (f_t0(idx_yp1, 0) - f_t0(idx_ym1, 0)) / (2.0*dy(idx, 0));
+        }
+        // TODO double check these signs, it depends on how grid is loaded which way is up
+        // this assumes positive lat is at start of grid (opposite of what you'd expect)
+        dfdy(idx) *= -1.0;
       }
     }
-  }
-  
-  //--------------------------------------------------
-  //TODO I left off here
-  //--------------------------------------------------
 
-  // // grid related stuff
-  
-  // atlas::StructuredGrid grid = fspace.grid();
-  // const int size = grid.size();
-  // atlas::idx_t ny = grid.ny();
-  // double missing;
-  // missing = util::missi  {
+    // time derivatives
+    for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
+      for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
+        atlas::idx_t idx = fspace.index(ii, jj);
 
-  // // copy the existing data
-  
-  // atlas::FieldSet fs_bar = util::copyFieldSet(fs);
-  
-  // // get views to the fields we'll need  
-  // auto c_view = atlas::array::make_view<double,2>(geom_.extraFields().field("phase_speed"));
-  // auto lonlat_view = atlas::array::make_view<double, 2>(fspace.lonlat());
-  // auto halo_view = atlas::array::make_view<int, 1>(fspace.ghost());
-  // auto coastdist_view = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
+        // skip land
+        if (f_t0(idx,0) == missing) continue;
 
- 
+        // calculate and apply add df/dt
+        double dfdt = cx(idx) * dfdx(idx) + cy(idx) * dfdy(idx);
+        if (leapfrog_init) {
+          // euler forward (for very first timestep only)
+          f_tp1(idx, 0) = f_t0(idx, 0) - tstep_.toSeconds()*dfdt ;
+        } else {
+          // leapfrog
+          f_tp1(idx, 0) = f_tm1(idx, 0) - 2.0*tstep_.toSeconds()*dfdt;
+        }
 
-  for (int v = 0; v < xx_t0.size(); v++) {
-  //   auto v_tm1_view = atlas::array::make_view<double,2>(fs_m1_[v]);
-  //   auto v_view = atlas::array::make_view<double,2>(fs[v]);
-  //   auto v_bar_view = atlas::array::make_view<double,2>(fs_bar[v]);
-    auto v_tp1_view = atlas::array::make_view<double,2>(xx_tp1[v]);
-    
-
-  //   // calculate dudx
-  //   atlas::Field dudx = fspace.createField<double>();
-  //   auto dudx_view = atlas::array::make_view<double, 1>(dudx);
-  //   dudx_view.assign(0.0);
-    for (atlas::idx_t j = fspace.j_begin(); j < fspace.j_end(); j++) {
-      for (atlas::idx_t i = fspace.i_begin(j); i < fspace.i_end(j); i++) {
-        atlas::idx_t idx = fspace.index(i,j);        
-
-        //skip land
-        if(v_tp1_view(idx,0) == missing) continue;
-        v_tp1_view(idx, 0) = dfdx(idx);
-  
-  //       // horizontal derivative
-  //       if (v_view(idx_xp1, 0) == missing && v_view(idx_xm1, 0) == missing) {          
-  //       } else if (v_view(idx_xp1, 0) != missing && v_view(idx_xm1, 0) != missing) {          
-  //         dudx_view(idx) = (v_view(idx_xp1, 0) - v_view(idx_xm1, 0)) / (2.0*dx_view(idx, 0));    
-  //       } else if (v_view(idx_xp1, 0) == missing) {
-  //         // dudx = (v_view(idx, 0) - v_view(idx_xm1, 0)) / (2.0*dx_view(idx, 0));
-  //       } else if (v_view(idx_xm1, 0) == missing) {
-  //         //dudx = (v_view(idx_xp1, 0) - v_view(idx, 0)) / dx_view(idx, 0);
-  //       }
+        // move t=0 to t-1
+        f_tm1(idx, 0) = f_t0(idx, 0);
       }
     }
-  //   fspace.haloExchange(dudx);
 
-  //       // boundary conditions
-  //       if (v_view(idx_xp1, 0) == missing && v_view(idx_xm1, 0) != missing) {
-  //         dudx_view(idx) = dudx_view(idx_xm1);
-  //       } else if (v_view(idx_xp1, 0) != missing && v_view(idx_xm1, 0) == missing) {
-  //         dudx_view(idx) = dudx_view(idx_xp1);
-  //       }
-
-  //       v_tp1_view(idx, 0) = v_tm1_view(idx, 0) + c * dudx_view(idx) * 2.0*tstep_.toSeconds();
-  //       v_bar_view(idx, 0) = v_view(idx, 0);
-  //         // + 0.1 * (
-  //         //   v_tp1_view(idx, 0) 
-  //         // - (2.0*v_view(idx, 0))
-  //         // + v_tm1_view(idx, 0));
-  //       // v_tp1_view(idx, 0) = dudx_view(idx);
-  //     }    
-  //   }
-     fspace.haloExchange(xx_tp1[v]);
-  //   fspace.haloExchange(fs_bar[v]);
+    // update halos
+    fspace.haloExchange(xx_tp1[var]);
+    fspace.haloExchange(xx_tm1_[var]);
   }
-  // fs_m1_ = fs_bar;
-
-
 
   xx.validTime() += tstep_;
 }
