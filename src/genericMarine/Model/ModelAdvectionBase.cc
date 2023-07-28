@@ -6,7 +6,7 @@
  */
 
 #include "genericMarine/Traits.h"
-#include "genericMarine/Model/ModelAdvection.h"
+#include "genericMarine/Model/ModelAdvectionBase.h"
 #include "genericMarine/Geometry/Geometry.h"
 
 #include "oops/interface/ModelBase.h"
@@ -19,7 +19,7 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-ModelAdvection::ModelAdvection(const Geometry & geom, const ModelAdvectionParameters & params)
+ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom, const ModelAdvectionBaseParameters & params)
 : geom_(geom), tstep_(params.tstep), phaseSpeed_() {
 
   // create zero u/v fields
@@ -35,67 +35,23 @@ ModelAdvection::ModelAdvection(const Geometry & geom, const ModelAdvectionParame
 
 // -----------------------------------------------------------------------------
 
-ModelAdvection::~ModelAdvection(){}
+ModelAdvectionBase::~ModelAdvectionBase(){}
 
 // -----------------------------------------------------------------------------
 
-void ModelAdvection::print(std::ostream & os) const {
-  os << "ModelAdvection::print not implemented";
+void ModelAdvectionBase::print(std::ostream & os) const {
+  os << "ModelAdvectionBase::print not implemented";
 }
 
 // -----------------------------------------------------------------------------
 
-void ModelAdvection::initialize(State & xx) const {
+void ModelAdvectionBase::initialize(State & xx) const {
   xx_tm1_.clear();
 }
 
 // -----------------------------------------------------------------------------
 
-// atlas::FieldSet ModelAdvection::setParams() const {
-//   // This is a simple test situation, of 0 speed at the poles, increasing toward the equator
-//   // with a modulation to keep near 0.0 at the coasts
-//   atlas::FieldSet fset;
-
-//   // other fields we'll need
-//   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
-//   auto v_lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
-//   auto v_halo = atlas::array::make_view<int, 1>(fspace.ghost());
-//   auto v_coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
-
-//   // create zero u/v fields
-//   atlas::Field cx = fspace.createField<double>(atlas::option::name("cx"));
-//   atlas::Field cy = fspace.createField<double>(atlas::option::name("cy"));
-//   auto cx_view = atlas::array::make_view<double, 1> (cx);
-//   auto cy_view = atlas::array::make_view<double, 1> (cy);
-//   cx_view.assign(0.0);
-//   cy_view.assign(0.0);
-//   fset.add(cx);
-//   fset.add(cy);
-
-//   // set a horizontally varying u
-//   const double lat0 = 80.0;
-//   const double lat1_val = -1.0;
-//   const double coast_dist = 300e3;
-//   for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
-//     // based on latitude
-//     double lat = v_lonlat(idx, 1);
-//     if (abs(lat) > lat0) {
-//       cx_view(idx) = 0.0;
-//     } else {
-//       cx_view(idx) = (1.0 - abs(lat)/lat0) * lat1_val;
-//     }
-
-//     // set to zero near coast
-//     cx_view(idx) *= std::min(v_coastdist(idx,0) / coast_dist, 1.0);
-//   }
-
-//   // keep horizontally varying v to 0
-//   return fset;
-// }
-
-// -----------------------------------------------------------------------------
-
-void ModelAdvection::step(State & xx, const ModelAuxControl &) const {
+void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
   double missing; missing = util::missingValue(missing);
 
@@ -204,7 +160,7 @@ void ModelAdvection::step(State & xx, const ModelAuxControl &) const {
 
 // -----------------------------------------------------------------------------
 
-  void ModelAdvection::finalize(State & xx) const {
+  void ModelAdvectionBase::finalize(State & xx) const {
     xx_tm1_.clear();
   }
 

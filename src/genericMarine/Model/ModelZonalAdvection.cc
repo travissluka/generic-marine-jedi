@@ -7,7 +7,7 @@
  */
 
 #include "genericMarine/Traits.h"
-#include "genericMarine/Model/ModelAdvectionByLat.h"
+#include "genericMarine/Model/ModelZonalAdvection.h"
 
 #include "oops/interface/ModelBase.h"
 
@@ -15,7 +15,7 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-static oops::interface::ModelMaker<Traits, ModelAdvectionByLat> modelAdvection_("AdvectionByLat");
+static oops::interface::ModelMaker<Traits, ModelZonalAdvection> modelAdvection_("ZonalAdvection");
 
 // -----------------------------------------------------------------------------
 
@@ -27,24 +27,25 @@ double interp(const double lat, const std::vector<double> & lats, const std::vec
   } else if (i == lats.size()) {
     return vals[vals.size()-1];
   } else {
-    double a = (lat - lats[i])/(lats[i-1]-lats[i]);
-    return a * (vals[i-1] - vals[i]) + vals[i];
+    return (lat - lats[i])/(lats[i-1]-lats[i]) * (vals[i-1] - vals[i]) + vals[i];
   }
 }
 
 // -----------------------------------------------------------------------------
 
-ModelAdvectionByLat::ModelAdvectionByLat(const Geometry & geom, const ModelAdvectionByLatParameters & params)
- : ModelAdvection(geom, params)
+ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom, const ModelZonalAdvectionParameters & params)
+ : ModelAdvectionBase(geom, params)
 {
   // make sure input parameters are correct
-  const std::vector<double> & lats = params.latitude.value();
-  const std::vector<double> & vals = params.phaseSpeed.value();
-  ASSERT (lats.size() == vals.size());
+  const double coast_dist = params.coastDist.value();
+  ASSERT(coast_dist >= 0.0);
+
+  const std::vector<double> & lats = params.speed.value().latitude.value();
+  const std::vector<double> & speed = params.speed.value().value.value();
+  ASSERT (lats.size() == speed.size());
   ASSERT (lats.size() >= 1);
   for (size_t i = 1; i < lats.size(); i++) {
-    ASSERT(lats[i] < lats[i-1]);
-  }
+    ASSERT(lats[i] < lats[i-1]); }
 
   // get fields
   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
@@ -53,14 +54,10 @@ ModelAdvectionByLat::ModelAdvectionByLat(const Geometry & geom, const ModelAdvec
   auto coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
   auto lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
 
-  // set a horizontally varying u
-  const double coast_dist = 300e3;
+  // set a horizontally varying u  
   for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
-    // based on latitude
-    cx(idx) = interp(lonlat(idx, 1), lats, vals);
-
-    // set to zero near coast
-    cx(idx) *= std::min(coastdist(idx,0) / coast_dist, 1.0);
+    cx(idx) = interp(lonlat(idx, 1), lats, speed)
+              * std::min(coastdist(idx,0) / coast_dist, 1.0);
   }
 }
 

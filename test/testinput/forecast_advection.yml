@@ -9,10 +9,13 @@ geometry:
   rossby radius file: data_static/rossby_radius.dat
 
 model:
-  name: AdvectionByLat
+  name: ZonalAdvection
   tstep: PT1H
-  latitude:    [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
-  phase speed: [ 0.0, -1.0, 0.0, 1.0,  0.0,  -1.0,   0.0]
+  speed:
+    latitude: [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
+    value:    [ 0.0, -2.0, 0.0, 1.0,  0.0,  -1.0,   0.0]
+  coastal damping distance: 100.0e3
+
 
 initial condition:
   date: &ic_date 2018-04-15T12:00:00Z

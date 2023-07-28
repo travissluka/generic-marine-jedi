@@ -22,21 +22,21 @@ namespace genericMarine {
 
 //-----------------------------------------------------------------------------
 
-  class ModelAdvectionParameters:public oops::ModelParametersBase {
-    OOPS_CONCRETE_PARAMETERS(ModelAdvectionParameters, ModelParametersBase)
+  class ModelAdvectionBaseParameters:public oops::ModelParametersBase {
+    OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, ModelParametersBase)
    public:
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
   };
 
 //-----------------------------------------------------------------------------
 
-  class ModelAdvection:public oops::interface::ModelBase<Traits>,
-              private util::ObjectCounter<ModelAdvection>
+  class ModelAdvectionBase:public oops::interface::ModelBase<Traits>,
+              private util::ObjectCounter<ModelAdvectionBase>
   {
    public:
-    typedef ModelAdvectionParameters Parameters_;
-    ModelAdvection(const Geometry &, const ModelAdvectionParameters &);
-    virtual ~ModelAdvection() = 0;
+    typedef ModelAdvectionBaseParameters Parameters_;
+    ModelAdvectionBase(const Geometry &, const ModelAdvectionBaseParameters &);
+    virtual ~ModelAdvectionBase() = 0;
 
     // main model run methods
     void initialize(State &) const;

@@ -1,6 +1,6 @@
 genericmarine_target_sources(
-    ModelAdvection.h
-    ModelAdvection.cc
-    ModelAdvectionByLat.h
-    ModelAdvectionByLat.cc
+    ModelAdvectionBase.h
+    ModelAdvectionBase.cc
+    ModelZonalAdvection.h
+    ModelZonalAdvection.cc
 )
