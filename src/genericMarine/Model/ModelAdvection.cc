@@ -6,7 +6,7 @@
  */
 
 #include "genericMarine/Traits.h"
-#include "genericMarine/Model/ModelSimpleWave.h"
+#include "genericMarine/Model/ModelAdvection.h"
 #include "genericMarine/Geometry/Geometry.h"
 
 #include "oops/interface/ModelBase.h"
@@ -19,89 +19,91 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-static oops::interface::ModelMaker<Traits, ModelSimpleWave> modelSimpleWave_("SimpleWave");
+ModelAdvection::ModelAdvection(const Geometry & geom, const ModelAdvectionParameters & params)
+: geom_(geom), tstep_(params.tstep), phaseSpeed_() {
 
-// -----------------------------------------------------------------------------
-
-ModelSimpleWave::ModelSimpleWave(const Geometry & geom, const ModelSimpleWaveParameters & params)
-: geom_(geom), tstep_(params.tstep) {
-
-  // generate the 2D fields that control the advection, this
-  // function can be overriden by a subclass. TODO: check to make sure it has the right fields
-  params_ = this->setParams();
-  if (!params_.has("cx") || !params_.has("cy")) {
-    util::abor1_cpp("ModelSimpleWave::setParams must provide \"u\" and \"cy\"",
-        __FILE__, __LINE__);
-  }
+  // create zero u/v fields
+  atlas::Field cx = geom_.functionSpace().createField<double>(atlas::option::name("cx"));
+  atlas::Field cy = geom_.functionSpace().createField<double>(atlas::option::name("cy"));
+  auto cx_view = atlas::array::make_view<double, 1> (cx);
+  auto cy_view = atlas::array::make_view<double, 1> (cy);
+  cx_view.assign(0.0);
+  cy_view.assign(0.0);
+  phaseSpeed_.add(cx);
+  phaseSpeed_.add(cy);
 }
 
 // -----------------------------------------------------------------------------
 
-void ModelSimpleWave::print(std::ostream & os) const {
-  os << "ModelSimpleWave::print not implemented";
+ModelAdvection::~ModelAdvection(){}
+
+// -----------------------------------------------------------------------------
+
+void ModelAdvection::print(std::ostream & os) const {
+  os << "ModelAdvection::print not implemented";
 }
 
 // -----------------------------------------------------------------------------
 
-void ModelSimpleWave::initialize(State & xx) const {
+void ModelAdvection::initialize(State & xx) const {
   xx_tm1_.clear();
 }
 
 // -----------------------------------------------------------------------------
 
-atlas::FieldSet ModelSimpleWave::setParams() const {
-  // This is a simple test situation, of 0 speed at the poles, increasing toward the equator
-  // with a modulation to keep near 0.0 at the coasts
-  atlas::FieldSet fset;
+// atlas::FieldSet ModelAdvection::setParams() const {
+//   // This is a simple test situation, of 0 speed at the poles, increasing toward the equator
+//   // with a modulation to keep near 0.0 at the coasts
+//   atlas::FieldSet fset;
 
-  // other fields we'll need
-  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
-  auto v_lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
-  auto v_halo = atlas::array::make_view<int, 1>(fspace.ghost());
-  auto v_coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
+//   // other fields we'll need
+//   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+//   auto v_lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
+//   auto v_halo = atlas::array::make_view<int, 1>(fspace.ghost());
+//   auto v_coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
 
-  // create zero u/v fields
-  atlas::Field cx = fspace.createField<double>(atlas::option::name("cx"));
-  atlas::Field cy = fspace.createField<double>(atlas::option::name("cy"));
-  auto cx_view = atlas::array::make_view<double, 1> (cx);
-  auto cy_view = atlas::array::make_view<double, 1> (cy);
-  cx_view.assign(0.0);
-  cy_view.assign(0.0);
-  fset.add(cx);
-  fset.add(cy);
+//   // create zero u/v fields
+//   atlas::Field cx = fspace.createField<double>(atlas::option::name("cx"));
+//   atlas::Field cy = fspace.createField<double>(atlas::option::name("cy"));
+//   auto cx_view = atlas::array::make_view<double, 1> (cx);
+//   auto cy_view = atlas::array::make_view<double, 1> (cy);
+//   cx_view.assign(0.0);
+//   cy_view.assign(0.0);
+//   fset.add(cx);
+//   fset.add(cy);
 
-  // set a horizontally varying u
-  const double lat0 = 80.0;
-  const double lat1_val = -1.0;
-  const double coast_dist = 300e3;
-  for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
-    // based on latitude
-    double lat = v_lonlat(idx, 1);
-    if (abs(lat) > lat0) {
-      cx_view(idx) = 0.0;
-    } else {
-      cx_view(idx) = (1.0 - abs(lat)/lat0) * lat1_val;
-    }
+//   // set a horizontally varying u
+//   const double lat0 = 80.0;
+//   const double lat1_val = -1.0;
+//   const double coast_dist = 300e3;
+//   for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
+//     // based on latitude
+//     double lat = v_lonlat(idx, 1);
+//     if (abs(lat) > lat0) {
+//       cx_view(idx) = 0.0;
+//     } else {
+//       cx_view(idx) = (1.0 - abs(lat)/lat0) * lat1_val;
+//     }
 
-    // set to zero near coast
-    cx_view(idx) *= std::min(v_coastdist(idx,0) / coast_dist, 1.0);
-  }
+//     // set to zero near coast
+//     cx_view(idx) *= std::min(v_coastdist(idx,0) / coast_dist, 1.0);
+//   }
 
-  // keep horizontally varying v to 0
-  return fset;
-}
+//   // keep horizontally varying v to 0
+//   return fset;
+// }
 
 // -----------------------------------------------------------------------------
 
-void ModelSimpleWave::step(State & xx, const ModelAuxControl &) const {
+void ModelAdvection::step(State & xx, const ModelAuxControl &) const {
   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
   double missing; missing = util::missingValue(missing);
 
   // get various data views we need
   auto dx = atlas::array::make_view<double, 2>(geom_.extraFields().field("dx"));
   auto dy = atlas::array::make_view<double, 2>(geom_.extraFields().field("dy"));
-  auto cx = atlas::array::make_view<double, 1>(params_.field("cx"));
-  auto cy = atlas::array::make_view<double, 1>(params_.field("cy"));
+  auto cx = atlas::array::make_view<double, 1>(phaseSpeed_.field("cx"));
+  auto cy = atlas::array::make_view<double, 1>(phaseSpeed_.field("cy"));
 
   // fieldsets at various times (past, present, future)
   atlas::FieldSet xx_tp1 = xx.fieldSet();
@@ -202,7 +204,7 @@ void ModelSimpleWave::step(State & xx, const ModelAuxControl &) const {
 
 // -----------------------------------------------------------------------------
 
-  void ModelSimpleWave::finalize(State & xx) const {
+  void ModelAdvection::finalize(State & xx) const {
     xx_tm1_.clear();
   }
 

@@ -175,7 +175,7 @@ genericmarine_add_test( NAME modelauxcontrol
 # Test of executables
 #================================================================================
 
-genericmarine_add_test( NAME forecast_simplewave 
+genericmarine_add_test( NAME forecast_advection
                         EXE genericmarine_forecast.x )
 
 genericmarine_add_test( NAME hofx3d

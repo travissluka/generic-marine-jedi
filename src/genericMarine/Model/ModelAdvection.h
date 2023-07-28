@@ -22,20 +22,21 @@ namespace genericMarine {
 
 //-----------------------------------------------------------------------------
 
-  class ModelSimpleWaveParameters:public oops::ModelParametersBase {
-    OOPS_CONCRETE_PARAMETERS(ModelSimpleWaveParameters, ModelParametersBase)
+  class ModelAdvectionParameters:public oops::ModelParametersBase {
+    OOPS_CONCRETE_PARAMETERS(ModelAdvectionParameters, ModelParametersBase)
    public:
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
   };
 
 //-----------------------------------------------------------------------------
 
-  class ModelSimpleWave:public oops::interface::ModelBase<Traits>,
-              private util::ObjectCounter<ModelSimpleWave>
+  class ModelAdvection:public oops::interface::ModelBase<Traits>,
+              private util::ObjectCounter<ModelAdvection>
   {
    public:
-    typedef ModelSimpleWaveParameters Parameters_;
-    ModelSimpleWave(const Geometry &, const ModelSimpleWaveParameters &);
+    typedef ModelAdvectionParameters Parameters_;
+    ModelAdvection(const Geometry &, const ModelAdvectionParameters &);
+    virtual ~ModelAdvection() = 0;
 
     // main model run methods
     void initialize(State &) const;
@@ -46,18 +47,16 @@ namespace genericMarine {
     const util::Duration & timeResolution() const {return tstep_;}
     const oops::Variables & variables() const {return vars_;}
 
-    //
-    atlas::FieldSet setParams() const;
-
    protected:
     const Geometry & geom_;
+    atlas::FieldSet phaseSpeed_;
 
    private:
     void print(std::ostream &) const;
     util::Duration tstep_;
-    const oops::Variables vars_;    
+    const oops::Variables vars_;
 
-    atlas::FieldSet params_;  // other user-provided model paramters
+
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 

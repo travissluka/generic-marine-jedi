@@ -1,4 +1,6 @@
 genericmarine_target_sources(
-    ModelSimpleWave.h
-    ModelSimpleWave.cc
+    ModelAdvection.h
+    ModelAdvection.cc
+    ModelAdvectionByLat.h
+    ModelAdvectionByLat.cc
 )
