@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "genericMarine/Model/ModelAdvectionBase.h"
 
 #include "oops/util/parameters/Parameters.h"
@@ -32,7 +34,7 @@ namespace genericMarine {
 
 //-----------------------------------------------------------------------------
 
-  class ModelZonalAdvection:public ModelAdvectionBase, 
+  class ModelZonalAdvection:public ModelAdvectionBase,
     private util::ObjectCounter<ModelZonalAdvection> {
    public:
     typedef ModelZonalAdvectionParameters Parameters_;
@@ -40,4 +42,4 @@ namespace genericMarine {
   };
 
 //-----------------------------------------------------------------------------
-}
+}  // namespace genericMarine

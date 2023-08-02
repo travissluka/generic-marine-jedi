@@ -67,8 +67,9 @@ namespace genericMarine {
     util::Duration tstep_;
     const oops::Variables vars_;
 
-    // Value at boundary = bc_a*f_x0 + bc_b where f_x0 is the value of a neighboring valid grid point.
-    double bc_a_, bc_b_; 
+    // Value at boundary = bc_a*f_x0 + bc_b where
+    // f_x0 is the value of a neighboring valid grid point.
+    double bc_a_, bc_b_;
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 

@@ -19,11 +19,11 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom, const ModelAdvectionBaseParameters & params)
- : geom_(geom), tstep_(params.tstep), phaseSpeed_(), 
-   bc_a_(params.boundary.value().a),
-   bc_b_(params.boundary.value().b) {
-
+ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
+                                       const ModelAdvectionBaseParameters & params)
+  : geom_(geom), tstep_(params.tstep), phaseSpeed_(),
+    bc_a_(params.boundary.value().a),
+    bc_b_(params.boundary.value().b) {
   // create zero u/v fields
   atlas::Field cx = geom_.functionSpace().createField<double>(atlas::option::name("cx"));
   atlas::Field cy = geom_.functionSpace().createField<double>(atlas::option::name("cy"));
@@ -37,7 +37,7 @@ ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom, const ModelAdvecti
 
 // -----------------------------------------------------------------------------
 
-ModelAdvectionBase::~ModelAdvectionBase(){}
+ModelAdvectionBase::~ModelAdvectionBase() {}
 
 // -----------------------------------------------------------------------------
 
@@ -78,9 +78,9 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   // for each variable in the model
   for (atlas::idx_t var = 0; var < xx_t0.size(); var++) {
     // various data views we need
-    auto f_t0 = atlas::array::make_view<double,2>(xx_t0[var]);
-    auto f_tp1 = atlas::array::make_view<double,2>(xx_tp1[var]);
-    auto f_tm1 = atlas::array::make_view<double,2>(xx_tm1_[var]);
+    auto f_t0 = atlas::array::make_view<double, 2>(xx_t0[var]);
+    auto f_tp1 = atlas::array::make_view<double, 2>(xx_tp1[var]);
+    auto f_tm1 = atlas::array::make_view<double, 2>(xx_tm1_[var]);
 
     // calculate the horizontal derivative
     dfdx.assign(0.0);
@@ -94,23 +94,25 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
         atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
 
         // skip land
-        if (f_t0(idx,0) == missing) continue;
+        if (f_t0(idx, 0) == missing) continue;
 
         // note on boundary conditions for df/dx and df/dy:
-        // For outgoing flow, Neumann conditions are used (derivative is specified) so that the second derivative is 0
-        // For incoming flow, boundary value = bc_a_*f_x0 + bc_b_ where f_x0 is a valid neighboring grid point
+        // For outgoing flow, Neumann conditions are used (derivative is specified) so that
+        // the second derivative is 0.
+        // For incoming flow, boundary value = bc_a_*f_x0 + bc_b_ where f_x0 is a valid
+        // neighboring grid point
         double f_x0  = f_t0(idx, 0);
         double inflow_bc = bc_a_*f_x0 + bc_b_;
 
         // df/dx
-        double f_xm1 = f_t0(idx_xm1, 0);        
+        double f_xm1 = f_t0(idx_xm1, 0);
         double f_xp1 = f_t0(idx_xp1, 0);
-        if (f_xm1 == missing){
+        if (f_xm1 == missing) {
           // set boundary condition for missing left neighbor
           f_xm1 = inflow_bc;
           if (cx(idx) < 0.0 && f_xp1 != missing) f_xm1 = 2.0*f_x0 - f_xp1;
-        } 
-        if (f_xp1 == missing){
+        }
+        if (f_xp1 == missing) {
         // set boundary condition for missing right neighbor
          f_xp1 = inflow_bc;
          if (cx(idx) > 0.0 && f_xm1 != missing) f_xp1 =  2.0*f_x0 - f_xm1;
@@ -120,7 +122,7 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
         // df/dy
         double f_ym1 = f_t0(idx_ym1, 0);
         double f_yp1 = f_t0(idx_yp1, 0);
-        if (f_ym1 == missing){
+        if (f_ym1 == missing) {
           // set boundary condition for missing neighbor below
           f_ym1 = inflow_bc;
           if (cy(idx) < 0.0 && f_yp1 != missing) f_ym1 = 2.0*f_x0 - f_yp1;
@@ -130,9 +132,9 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
           f_yp1 = inflow_bc;
           if (cy(idx) > 0.0 && f_ym1 != missing) f_yp1 = 2.0*f_x0 - f_ym1;
         }
-        dfdy(idx) = (f_yp1 - f_ym1) / (2.0*dy(idx, 0));     
-        // TODO double check the signs for cy, it depends on how grid is loaded which way is up
-        // this assumes positive lat is at start of grid (opposite of what you'd expect)
+        dfdy(idx) = (f_yp1 - f_ym1) / (2.0*dy(idx, 0));
+        // TODO(travis) double check the signs for cy, it depends on how grid is loaded which way
+        // is up this assumes positive lat is at start of grid (opposite of what you'd expect)
       }
     }
 
@@ -142,13 +144,13 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
         atlas::idx_t idx = fspace.index(ii, jj);
 
         // skip land
-        if (f_t0(idx,0) == missing) continue;
+        if (f_t0(idx, 0) == missing) continue;
 
         // calculate and apply add df/dt
         double dfdt = cx(idx) * dfdx(idx) + cy(idx) * dfdy(idx);
         if (leapfrog_init) {
           // euler forward (for very first timestep only)
-          f_tp1(idx, 0) = f_t0(idx, 0) - tstep_.toSeconds()*dfdt ;
+          f_tp1(idx, 0) = f_t0(idx, 0) - tstep_.toSeconds()*dfdt;
         } else {
           // leapfrog
           f_tp1(idx, 0) = f_tm1(idx, 0) - 2.0*tstep_.toSeconds()*dfdt;
