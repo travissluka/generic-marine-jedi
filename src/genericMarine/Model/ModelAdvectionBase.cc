@@ -20,7 +20,9 @@ namespace genericMarine {
 // -----------------------------------------------------------------------------
 
 ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom, const ModelAdvectionBaseParameters & params)
-: geom_(geom), tstep_(params.tstep), phaseSpeed_() {
+ : geom_(geom), tstep_(params.tstep), phaseSpeed_(), 
+   bc_a_(params.boundary.value().a),
+   bc_b_(params.boundary.value().b) {
 
   // create zero u/v fields
   atlas::Field cx = geom_.functionSpace().createField<double>(atlas::option::name("cx"));
@@ -94,36 +96,43 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
         // skip land
         if (f_t0(idx,0) == missing) continue;
 
+        // note on boundary conditions for df/dx and df/dy:
+        // For outgoing flow, Neumann conditions are used (derivative is specified) so that the second derivative is 0
+        // For incoming flow, boundary value = bc_a_*f_x0 + bc_b_ where f_x0 is a valid neighboring grid point
+        double f_x0  = f_t0(idx, 0);
+        double inflow_bc = bc_a_*f_x0 + bc_b_;
+
         // df/dx
-        if (f_t0(idx_xp1, 0) == missing && f_t0(idx_xm1, 0) == missing) {
-          // leave as 0, no neighbors
-        } else if (f_t0(idx_xm1, 0) == missing) {
-          // no left neighbor
-          dfdx(idx) = (f_t0(idx_xp1, 0) - f_t0(idx, 0)) / dx(idx, 0);
-        } else if (f_t0(idx_xp1, 0) == missing) {
-          // no right neighbor
-          dfdx(idx) = (f_t0(idx, 0) - f_t0(idx_xm1, 0)) / dx(idx, 0);
-        } else {
-          // 2 neighbors, centered difference
-          dfdx(idx) = (f_t0(idx_xp1, 0) - f_t0(idx_xm1, 0)) / (2.0*dx(idx, 0));
+        double f_xm1 = f_t0(idx_xm1, 0);        
+        double f_xp1 = f_t0(idx_xp1, 0);
+        if (f_xm1 == missing){
+          // set boundary condition for missing left neighbor
+          f_xm1 = inflow_bc;
+          if (cx(idx) < 0.0 && f_xp1 != missing) f_xm1 = 2.0*f_x0 - f_xp1;
+        } 
+        if (f_xp1 == missing){
+        // set boundary condition for missing right neighbor
+         f_xp1 = inflow_bc;
+         if (cx(idx) > 0.0 && f_xm1 != missing) f_xp1 =  2.0*f_x0 - f_xm1;
         }
+        dfdx(idx) = (f_xp1 - f_xm1) / (2.0*dx(idx, 0));
 
         // df/dy
-        if (f_t0(idx_yp1, 0) == missing && f_t0(idx_ym1, 0) == missing) {
-          // leave as 0, no neighbors
-        } else if (f_t0(idx_ym1, 0) == missing) {
-          // no neighbor below
-          dfdy(idx) = (f_t0(idx_yp1, 0) - f_t0(idx, 0)) / dy(idx, 0);
-        } else if (f_t0(idx_yp1, 0) == missing) {
-          // no neighbor above
-          dfdy(idx) = (f_t0(idx, 0) - f_t0(idx_ym1, 0)) / dy(idx, 0);
-        } else {
-          // 2 neighbors, centered difference
-          dfdy(idx) = (f_t0(idx_yp1, 0) - f_t0(idx_ym1, 0)) / (2.0*dy(idx, 0));
+        double f_ym1 = f_t0(idx_ym1, 0);
+        double f_yp1 = f_t0(idx_yp1, 0);
+        if (f_ym1 == missing){
+          // set boundary condition for missing neighbor below
+          f_ym1 = inflow_bc;
+          if (cy(idx) < 0.0 && f_yp1 != missing) f_ym1 = 2.0*f_x0 - f_yp1;
         }
-        // TODO double check these signs, it depends on how grid is loaded which way is up
+        if (f_yp1 == missing) {
+          // set boundary condition for missing neighbor above
+          f_yp1 = inflow_bc;
+          if (cy(idx) > 0.0 && f_ym1 != missing) f_yp1 = 2.0*f_x0 - f_ym1;
+        }
+        dfdy(idx) = (f_yp1 - f_ym1) / (2.0*dy(idx, 0));     
+        // TODO double check the signs for cy, it depends on how grid is loaded which way is up
         // this assumes positive lat is at start of grid (opposite of what you'd expect)
-        dfdy(idx) *= -1.0;
       }
     }
 

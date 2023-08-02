@@ -22,10 +22,21 @@ namespace genericMarine {
 
 //-----------------------------------------------------------------------------
 
+  class BoundaryConditionParameters:public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(BoundaryConditionParameters, Parameters)
+   public:
+    // Dirichlet boundary conditions for incoming flow.
+    // Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
+    // Outflow assumes Neumann conditions.
+    oops::RequiredParameter<double> a{"a", this};
+    oops::RequiredParameter<double> b{"b", this};
+  };
+
   class ModelAdvectionBaseParameters:public oops::ModelParametersBase {
     OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, ModelParametersBase)
    public:
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
+    oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
   };
 
 //-----------------------------------------------------------------------------
@@ -56,7 +67,8 @@ namespace genericMarine {
     util::Duration tstep_;
     const oops::Variables vars_;
 
-
+    // Value at boundary = bc_a*f_x0 + bc_b where f_x0 is the value of a neighboring valid grid point.
+    double bc_a_, bc_b_; 
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 

@@ -56,8 +56,8 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom, const ModelZonal
 
   // set a horizontally varying u  
   for(atlas::idx_t idx = 0; idx < fspace.size(); idx++){
-    cx(idx) = interp(lonlat(idx, 1), lats, speed)
-              * std::min(coastdist(idx,0) / coast_dist, 1.0);
+    cx(idx) = interp(lonlat(idx, 1), lats, speed);
+    if (coast_dist > 0.0) cx(idx) *= std::min(coastdist(idx,0) / coast_dist, 1.0);
   }
 }
 
