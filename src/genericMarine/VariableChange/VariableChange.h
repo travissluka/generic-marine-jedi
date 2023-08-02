@@ -39,7 +39,7 @@ class VariableChange : public util::Printable {
   ~VariableChange() = default;
 
   void changeVar(State &, const oops::Variables &) const;
-  void changeVarInverse(const State &, const oops::Variables &) const { ASSERT(1 == 2); }
+  void changeVarInverse(State &, const oops::Variables &) const;
 
  private:
   void print(std::ostream &) const override { ASSERT(1 == 2); }

@@ -23,6 +23,7 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
+#include "oops/util/Duration.h"
 
 using atlas::array::make_view;
 
@@ -56,6 +57,9 @@ void Fields::updateFields(const oops::Variables & vars) {
   atlas::FieldSet fset;
   for (int v = 0; v < vars.size(); v++) {
     if (atlasFieldSet_.has(vars[v])) {
+      // Don't know why this is needed, I have a weird bug somewhere
+      atlasFieldSet_.field(vars[v]).rename(vars[v]);
+
       // field already exists, copy over
       fset.add(atlasFieldSet_.field(vars[v]));
     } else {
@@ -82,6 +86,8 @@ Fields & Fields::operator =(const Fields & other) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
+    ASSERT(atlasFieldSet_.has(name));
+    ASSERT(other.atlasFieldSet_.has(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
 
@@ -282,13 +288,25 @@ void Fields::write(const eckit::Configuration & conf) const {
   // open the netcdf file on the root pe
   int ncid, dims[3];
   if ( globalData.size() != 0 ) {
-    // get filename
+    // generate filename
     std::string filename;
     if (!conf.get("filename", filename)) {
-      util::abor1_cpp("Fields::write(), Get filename failed.", __FILE__, __LINE__);
-    } else {
-      oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
+      std::string tmpStr;
+      if (!conf.get("prefix", tmpStr)) {
+        util::abor1_cpp("Fields::write(), missing \"prefix\" "
+                        "or \"filename\" in config", __FILE__, __LINE__);
+      }
+      filename = tmpStr + ".";
+      if (conf.get("date", tmpStr)) {
+        util::DateTime dt(tmpStr);
+        util::Duration dur = time_ - dt;
+        filename += dt.toStringIO() + "." + dur.toString();
+      } else {
+        filename += time_.toStringIO();
+      }
+      filename += ".nc";
     }
+    oops::Log::info() << "Fields::write(), filename=" << filename << std::endl;
 
     // create file
     NC_CHECK(nc_create(filename.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
@@ -401,15 +419,26 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
     std::string name = vars_[v];
     ASSERT(fset.has(name));
 
-    auto fld   = atlasFieldSet_.field(name);
-    auto fd    = make_view<double, 2>(fld);
-    auto fd_in = make_view<double, 2>(fset.field(name));
+    atlas::Field fld_dst = atlasFieldSet_.field(name);
+    atlas::Field fld_src = fset.field(name);
 
-    for (int j = 0; j < size; j++) {
-      fd(j, 0) = fd_in(j, 0);
+    auto fd    = make_view<double, 2>(fld_dst);
+    // NOTE: this conversion should not be necessary, it is a temporary
+    // workaround. The dst fieldset *should* have the same data type as
+    // the src, but we'll deal with that later (this is only happening
+    // when writing geom out to a file)
+    if (fld_src.datatype() == atlas::array::DataType::real64()) {
+      auto fd_in = make_view<double, 2>(fld_src);
+      for (int j = 0; j < size; j++) {
+        fd(j, 0) = fd_in(j, 0);
+      }
+    } else if  (fld_src.datatype() == atlas::array::DataType::int32()) {
+      auto fd_in = make_view<int, 2>(fld_src);
+      for (int j = 0; j < size; j++) {
+        fd(j, 0) = fd_in(j, 0);
+      }
     }
-
-    geom_.functionSpace().haloExchange(fld);
+    geom_.functionSpace().haloExchange(fld_dst);
   }
 }
 
