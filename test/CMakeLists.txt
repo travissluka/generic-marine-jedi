@@ -181,6 +181,9 @@ genericmarine_add_test( NAME forecast_advection
 genericmarine_add_test( NAME hofx3d
                         EXE  genericmarine_hofx3d.x )
 
+genericmarine_add_test( NAME hofx4d
+                        EXE  genericmarine_hofx4d.x )
+
 genericmarine_add_test( NAME setcorscales
                         EXE genericmarine_setcorscales.x )
 

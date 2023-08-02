@@ -14,6 +14,10 @@ ecbuild_add_executable( TARGET  genericmarine_hofx3d.x
                         SOURCES HofX3D.cc
                         LIBS    genericmarine )
 
+ecbuild_add_executable( TARGET  genericmarine_hofx4d.x
+                        SOURCES HofX4D.cc
+                        LIBS    genericmarine )
+
 ecbuild_add_executable( TARGET  genericmarine_setcorscales.x
                         SOURCES SetCorScales.cc
                         LIBS    genericmarine )
