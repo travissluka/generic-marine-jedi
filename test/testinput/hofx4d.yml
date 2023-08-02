@@ -22,6 +22,7 @@ initial condition:
 model:
   name: ZonalAdvection
   tstep: PT1H
+  variables: [seaSurfaceTemperature]
   speed:
     latitude: [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
     value:    [ 0.0, -1.0, 0.0, 2.0,  0.0,  -1.0,   0.0]

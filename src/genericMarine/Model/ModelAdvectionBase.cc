@@ -21,7 +21,7 @@ namespace genericMarine {
 
 ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
                                        const ModelAdvectionBaseParameters & params)
-  : geom_(geom), tstep_(params.tstep), phaseSpeed_(),
+  : geom_(geom), tstep_(params.tstep), phaseSpeed_(), vars_(params.vars),
     bc_a_(params.boundary.value().a),
     bc_b_(params.boundary.value().b) {
   // create zero u/v fields

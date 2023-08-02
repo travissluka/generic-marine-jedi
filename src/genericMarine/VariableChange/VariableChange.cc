@@ -60,4 +60,9 @@ void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
 
 // -----------------------------------------------------------------------------
 
+void VariableChange::changeVarInverse(State &xx, const oops::Variables &vars) const {
+  changeVar(xx, vars);
+}
+// -----------------------------------------------------------------------------
+
 }  // namespace genericMarine

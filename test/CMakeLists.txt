@@ -195,6 +195,10 @@ genericmarine_add_test( NAME dirac
                         EXE  genericmarine_dirac.x
                         TEST_DEPENDS test_genericmarine_errorcovariance_training )
 
-genericmarine_add_test( NAME var
+genericmarine_add_test( NAME 3dvar
+                        EXE  genericmarine_var.x
+                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
+
+genericmarine_add_test( NAME 3dfgat
                         EXE  genericmarine_var.x
                         TEST_DEPENDS test_genericmarine_errorcovariance_training )

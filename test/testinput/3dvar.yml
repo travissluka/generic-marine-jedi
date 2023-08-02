@@ -1,0 +1,97 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
+_geometry: &geometry
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: data_static/landmask_1p0.nc
+
+cost function:
+  cost type: 3D-Var
+  window length: P1D
+  window begin: 2018-04-15T00:00:00Z
+  geometry: *geometry
+  analysis variables: [seaSurfaceTemperature]
+
+  background:
+    date: 2018-04-15T12:00:00Z
+    filename: data_static/sst_1p0.nc
+    state variables: [seaSurfaceTemperature]
+
+  background error:
+    covariance model: SABER
+    saber central block:
+      # The correlation operator
+      saber block name: BUMP_NICAS
+      read:
+        io:
+          data directory: data_generated/errorcovariance_training
+        drivers:
+          multivariate strategy: univariate
+          read local nicas: true
+        grids:
+        - model:
+            variables: [seaSurfaceTemperature]
+          io:
+            files prefix: bump
+
+  observations:
+    observers:
+    - obs space:
+        name: seaSurfaceTemperature
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: data_static/obs_sst.nc
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: data_output/var.obs_sst.nc
+        simulated variables: [seaSurfaceTemperature]
+      obs operator:
+        name: Identity
+        observation alias file: testinput/obsop_name_map.yml
+      obs filters:
+      - # remove observations on/near land
+        filter: Domain Check
+        where:
+        - variable: {name: GeoVaLs/sea_area_fraction}
+          minvalue: 0.5
+      - # Inflate observation error for obs near the coast
+        filter: Perform Action
+        where:
+        - variable: {name: GeoVaLs/distanceToCoast}
+          maxvalue: 500e3
+        action:
+          name: inflate error
+          inflation factor: 5.0
+
+variational:
+  minimizer:
+    algorithm: DRIPCG
+  iterations:
+  - geometry: *geometry
+    ninner: 10
+    gradient norm reduction: 1e-15
+    diagnostics:
+      departures: ombg
+    online diagnostics:
+      write increment: true
+      increment:
+        prefix: data_output/3dvar.inc
+
+output:
+  prefix: data_output/3dvar.an
+
+final:
+  diagnostics:
+    departures: oman
+
+test:
+  reference filename: testref/3dvar.ref
+  test output filename: testoutput/3dvar.ref

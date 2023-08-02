@@ -57,6 +57,9 @@ void Fields::updateFields(const oops::Variables & vars) {
   atlas::FieldSet fset;
   for (int v = 0; v < vars.size(); v++) {
     if (atlasFieldSet_.has(vars[v])) {
+      // Don't know why this is needed, I have a weird bug somewhere
+      atlasFieldSet_.field(vars[v]).rename(vars[v]);
+
       // field already exists, copy over
       fset.add(atlasFieldSet_.field(vars[v]));
     } else {
@@ -83,6 +86,8 @@ Fields & Fields::operator =(const Fields & other) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
     std::string name = vars_[v];
+    ASSERT(atlasFieldSet_.has(name));
+    ASSERT(other.atlasFieldSet_.has(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
 
