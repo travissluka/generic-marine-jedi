@@ -188,11 +188,11 @@ genericmarine_add_test( NAME setcorscales
                         EXE genericmarine_setcorscales.x )
 
 genericmarine_add_test( NAME errorcovariance_training
-                        EXE genericmarine_errorcovariance_training.x
+                        EXE genericmarine_error_covariance_toolbox.x
                         TEST_DEPENDS test_genericmarine_setcorscales )
 
 genericmarine_add_test( NAME dirac
-                        EXE  genericmarine_dirac.x
+                        EXE  genericmarine_error_covariance_toolbox.x
                         TEST_DEPENDS test_genericmarine_errorcovariance_training )
 
 genericmarine_add_test( NAME 3dvar

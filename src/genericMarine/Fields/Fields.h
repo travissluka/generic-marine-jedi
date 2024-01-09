@@ -67,7 +67,6 @@ namespace genericMarine {
 
     // atlas interfaces
     void toFieldSet(atlas::FieldSet &) const;
-    void toFieldSetAD(const atlas::FieldSet &);
     void fromFieldSet(const atlas::FieldSet &);
 
     atlas::FieldSet & fieldSet() { return atlasFieldSet_;}

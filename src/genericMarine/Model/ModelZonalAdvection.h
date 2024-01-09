@@ -14,6 +14,12 @@
 
 #include "oops/util/parameters/Parameters.h"
 
+namespace eckit {
+  class Configuration;
+}
+
+//-----------------------------------------------------------------------------
+
 namespace genericMarine {
 
 //-----------------------------------------------------------------------------
@@ -38,7 +44,7 @@ namespace genericMarine {
     private util::ObjectCounter<ModelZonalAdvection> {
    public:
     typedef ModelZonalAdvectionParameters Parameters_;
-    ModelZonalAdvection(const Geometry &, const ModelZonalAdvectionParameters &);
+    ModelZonalAdvection(const Geometry &, const eckit::Configuration &);
   };
 
 //-----------------------------------------------------------------------------

@@ -41,7 +41,7 @@ const int GEOM_HALO_SIZE = 1;
 // ----------------------------------------------------------------------------
 
 Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & comm)
-    : comm_(comm), extraFields_() {
+    : comm_(comm), fields_() {
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
   // create grid from configuration
@@ -112,16 +112,16 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
         vArea(idx, 0) = vDx(idx, 0) * vDy(idx, 0);
     }
   }
-  extraFields_.add(dx);
-  extraFields_.add(dy);
-  extraFields_.add(area);
+  fields_.add(dx);
+  fields_.add(dy);
+  fields_.add(area);
 
   // vertical unit
   atlas::Field vunit = fs.createField<double>(
     atlas::option::levels(1) | atlas::option::name("vunit"));
   auto vVunit = atlas::array::make_view<double, 2>(vunit);
   vVunit.assign(1.0);
-  extraFields_.add(vunit);
+  fields_.add(vunit);
 
   // Load/calculate other marine specific fields
   loadLandMask(conf);  // note, needs 'landmask' section of config
@@ -130,7 +130,7 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
     readRossbyRadius(conf.getString("rossby radius file")); }
 
   // mak sure the halos for all the fields are updated;
-  extraFields_.haloExchange();
+  fields_.haloExchange();
 
   // halo mask (needed for SABER)
   // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
@@ -142,12 +142,12 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
     if (vGhost(i)) continue;
     vHmask(i, 0) = 1;
   }
-  extraFields_.add(hmask);
+  fields_.add(hmask);
 
   // save geometry diagnostics (all the fields in geom!)
   if (conf.has("output")) {
-    Increment inc(*this, oops::Variables(extraFields_.field_names()), util::DateTime());
-    inc.fromFieldSet(extraFields_);
+    Increment inc(*this, oops::Variables(fields_.field_names()), util::DateTime());
+    inc.fromFieldSet(fields_);
     inc.write(conf.getSubConfiguration("output"));
   }
 }
@@ -228,7 +228,7 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
                      atlas::option::name("gmask"));
   functionSpace_.scatter(globalLandMask, gmask);
   functionSpace().haloExchange(gmask);
-  extraFields_.add(gmask);
+  fields_.add(gmask);
 
   // create a floating point version
   // mask is needed for OOPS interpolation
@@ -239,7 +239,17 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   auto vMask = atlas::array::make_view<double, 2>(mask);
   for (int j = 0; j < size; j++)
     vMask(j, 0) = static_cast<double>(vGmask(j, 0));
-  extraFields_.add(mask);
+  fields_.add(mask);
+
+  // owned field
+  atlas::Field owned = functionSpace_.createField<int>(
+                        atlas::option::levels(1) |
+                        atlas::option::name("owned"));
+  auto vOwned = atlas::array::make_view<int, 2>(owned);
+  auto vGhost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
+  for (int j = 0; j < size; j++)
+    vOwned(j, 0) = vGhost(j) ? 0 : 1;
+  fields_.add(owned);
 }
 
 // ----------------------------------------------------------------------------
@@ -258,7 +268,7 @@ void Geometry::print(std::ostream & os) const {
   size_t nMaskedLand = 0;
   size_t nUnmaskedOcean = 0;
   const int nSize = functionSpace().size();
-  auto fd = atlas::array::make_view<int, 2>(extraFields_.field("gmask"));
+  auto fd = atlas::array::make_view<int, 2>(fields_.field("gmask"));
   auto ghost = atlas::array::make_view<int, 1>(functionSpace().ghost());
   for (size_t j = 0; j < nSize; j++) {
     // don't count halo (ghost) points
@@ -300,11 +310,11 @@ void Geometry::readRossbyRadius(const std::string & filename) {
 
   atlas::Field rossby_field = interpToGeom(lonlat, rossby_vals);
   rossby_field.rename("rossby_radius");
-  extraFields_.add(rossby_field);
+  fields_.add(rossby_field);
 
   atlas::Field speed_field = interpToGeom(lonlat, speed_vals);
   speed_field.rename("phase_speed");
-  extraFields_.add(speed_field);
+  fields_.add(speed_field);
 }
 
 // ----------------------------------------------------------------------------
@@ -412,21 +422,21 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
 /// are entirely on land will return 0.
 void Geometry::calcDistToCoast() {
   const std::string FIELD_NAME = "distanceToCoast";
-  ASSERT(extraFields_.has("gmask"));
-  ASSERT(!extraFields_.has(FIELD_NAME));
+  ASSERT(fields_.has("gmask"));
+  ASSERT(!fields_.has(FIELD_NAME));
 
   // get things that will be needed later
   atlas::functionspace::StructuredColumns fspace(functionSpace_);
   auto vLonLat = atlas::array::make_view<double, 2> (fspace.lonlat());
   auto vGhost =  atlas::array::make_view<int, 1> (fspace.ghost());
-  auto vGmask =  atlas::array::make_view<int, 2> (extraFields_.field("gmask"));
+  auto vGmask =  atlas::array::make_view<int, 2> (fields_.field("gmask"));
 
   // create new field
   atlas::Field distToCoast = fspace.createField<double>(
     atlas::option::levels(1) |
     atlas::option::name(FIELD_NAME));
   auto vDistToCoast = atlas::array::make_view<double, 2>(distToCoast);
-  extraFields_.add(distToCoast);
+  fields_.add(distToCoast);
   vDistToCoast.assign(0.0);
 
   // get lat/lon of land points on all PEs

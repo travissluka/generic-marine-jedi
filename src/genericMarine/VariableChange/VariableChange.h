@@ -20,22 +20,11 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-class VariableChangeParameters : public oops::VariableChangeParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VariableChangeParameters,
-                           oops::VariableChangeParametersBase)
- public:
-  // Wrapper to VariableChange parameters
-//   VariableChangeParametersWrapper variableChangeParametersWrapper{this};
-};
-
-// -----------------------------------------------------------------------------
-
 class VariableChange : public util::Printable {
  public:
   static const std::string classname() {return "genericMarine::VariableChange";}
-  typedef VariableChangeParameters Parameters_;
 
-  explicit VariableChange(const Parameters_ &, const Geometry &);
+  explicit VariableChange(const eckit::Configuration &, const Geometry &);
   ~VariableChange() = default;
 
   void changeVar(State &, const oops::Variables &) const;

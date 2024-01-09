@@ -9,6 +9,7 @@
 
 #include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 // forward declarations
 namespace genericMarine {
@@ -32,8 +33,8 @@ namespace genericMarine {
     oops::RequiredParameter<double> b{"b", this};
   };
 
-  class ModelAdvectionBaseParameters:public oops::ModelParametersBase {
-    OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, ModelParametersBase)
+  class ModelAdvectionBaseParameters:public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, Parameters)
    public:
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
     oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};

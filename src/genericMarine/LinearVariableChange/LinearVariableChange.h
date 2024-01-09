@@ -29,20 +29,12 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-class LinearVariableChangeParameters : public oops::LinearVariableChangeParametersBase {
-  OOPS_CONCRETE_PARAMETERS(LinearVariableChangeParameters,
-                           oops::LinearVariableChangeParametersBase)
-};
-
-// -----------------------------------------------------------------------------
-
 class LinearVariableChange : public util::Printable {
   // NOTE: this is an empty class that doesn't do anything
  public:
   static const std::string classname() {return "genericMarine::LinearVariableChange";}
-  typedef LinearVariableChangeParameters Parameters_;
 
-  explicit LinearVariableChange(const Geometry &, const Parameters_ &) {}
+  explicit LinearVariableChange(const Geometry &, const eckit::Configuration &) {}
   ~LinearVariableChange() {}
 
   void changeVarTraj(const State &, const oops::Variables &) {}
