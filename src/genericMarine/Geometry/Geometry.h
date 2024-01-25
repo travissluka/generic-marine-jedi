@@ -58,8 +58,8 @@ namespace genericMarine {
     // atlas interfaces
     const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
     atlas::FunctionSpace & functionSpace() {return functionSpace_;}
-    const atlas::FieldSet & extraFields() const {return extraFields_;}
-    atlas::FieldSet & extraFields() {return extraFields_;}
+    const atlas::FieldSet & fields() const {return fields_;}
+    atlas::FieldSet & fields() {return fields_;}
 
     // miscellaneous
     bool levelsAreTopDown() const {return true;}
@@ -76,6 +76,6 @@ namespace genericMarine {
     // private variables
     const eckit::mpi::Comm & comm_;
     atlas::functionspace::StructuredColumns functionSpace_;
-    atlas::FieldSet extraFields_;
+    atlas::FieldSet fields_;
   };
 }  // namespace genericMarine

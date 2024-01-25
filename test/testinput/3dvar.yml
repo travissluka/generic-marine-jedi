@@ -13,8 +13,9 @@ _geometry: &geometry
 
 cost function:
   cost type: 3D-Var
-  window length: P1D
-  window begin: 2018-04-15T00:00:00Z
+  time window:
+    length: P1D
+    begin: 2018-04-15T00:00:00Z
   geometry: *geometry
   analysis variables: [seaSurfaceTemperature]
 
@@ -83,7 +84,8 @@ variational:
     online diagnostics:
       write increment: true
       increment:
-        prefix: data_output/3dvar.inc
+        state component:
+          prefix: data_output/3dvar.inc
 
 output:
   prefix: data_output/3dvar.an

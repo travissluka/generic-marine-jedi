@@ -16,6 +16,7 @@
 #include "genericMarine/ModelAux/ModelAuxControl.h"
 #include "genericMarine/ModelAux/ModelAuxCovariance.h"
 #include "genericMarine/ModelAux/ModelAuxIncrement.h"
+#include "genericMarine/ModelData/ModelData.h"
 #include "genericMarine/State/State.h"
 #include "genericMarine/VariableChange/VariableChange.h"
 
@@ -34,6 +35,7 @@ namespace genericMarine {
     typedef genericMarine::ModelAuxControl      ModelAuxControl;
     typedef genericMarine::ModelAuxCovariance   ModelAuxCovariance;
     typedef genericMarine::ModelAuxIncrement    ModelAuxIncrement;
+    typedef genericMarine::ModelData            ModelData;
     typedef genericMarine::State                State;
     typedef genericMarine::VariableChange       VariableChange;
   };

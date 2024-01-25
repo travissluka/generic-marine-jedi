@@ -9,8 +9,9 @@ _geometry: &geometry
 
 cost function:
   cost type: 3D-Var
-  window begin: __DA_WINDOW_START__
-  window length: PT24H
+  time window:
+    begin: __DA_WINDOW_START__
+    length: PT24H
   geometry: *geometry
   analysis variables: &vars [seaSurfaceTemperature]
 
@@ -24,7 +25,7 @@ cost function:
     saber central block:
       # The correlation operator
       saber block name: BUMP_NICAS
-      bump:
+      read:
         io:
           data directory: bump
         drivers:
@@ -84,7 +85,8 @@ variational:
     online diagnostics:
       write increment: true
       increment:
-        filename: inc.nc
+        state component:
+          filename: inc.nc
 
 final:
   diagnostics:

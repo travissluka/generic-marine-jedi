@@ -1,21 +1,22 @@
 /*
- * (C) Copyright 2019-2020 UCAR.
+ * (C) Copyright 2023-2023 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ * In applying this licence, ECMWF does not waive the privileges and immunities
+ * granted to it by virtue of its status as an intergovernmental organisation nor
+ * does it submit to any jurisdiction.
  */
 
+#include "oops/runs/Run.h"
+#include "saber/oops/ErrorCovarianceToolbox.h"
+#include "saber/oops/instantiateCovarFactory.h"
 #include "genericMarine/Traits.h"
 
-#include "oops/runs/Dirac.h"
-#include "oops/runs/Run.h"
-// #include "saber/oops/instantiateLocalizationFactory.h"
-#include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  // saber::instantiateLocalizationFactory<genericMarine::Traits>();
   saber::instantiateCovarFactory<genericMarine::Traits>();
-  oops::Dirac<genericMarine::Traits> dir;
+  saber::ErrorCovarianceToolbox<genericMarine::Traits> dir;
   return run.execute(dir);
 }

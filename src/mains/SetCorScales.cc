@@ -48,9 +48,9 @@ class SetCorScales : public oops::Application {
 
     // get required fields from geometry
     auto rossbyRadius = atlas::array::make_view<double, 2>(
-      geom.extraFields().field("rossby_radius"));
+      geom.fields().field("rossby_radius"));
     auto area = atlas::array::make_view<double, 2>(
-        geom.extraFields().field("area"));
+        geom.fields().field("area"));
 
     // create the atlas field
     atlas::FieldSet param_fieldSet;

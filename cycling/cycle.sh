@@ -117,7 +117,7 @@ while true; do
         $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_setcorscales.x setcorscales.yaml
 
         # initialize NICAS correlation operator
-        $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_errorcovariance_training.x errorcovariance_training.yaml
+        $MPI_CMD $MARINEJEDI_BIN_DIR/genericmarine_error_covariance_toolbox.x errorcovariance_training.yaml
 
         mv bump $BUMP_DIR
     fi

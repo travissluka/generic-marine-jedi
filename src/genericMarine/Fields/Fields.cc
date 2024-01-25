@@ -36,7 +36,7 @@ namespace genericMarine {
 
 Fields::Fields(const Geometry & geom, const oops::Variables & vars,
                 const util::DateTime & vt)
-  : atlasFieldSet_(), geom_(geom), missing_(util::missingValue(this->missing_)),
+  : atlasFieldSet_(), geom_(geom), missing_(util::missingValue<double>()),
     time_(vt), vars_(vars) {
   // the constructor that gets called by everything (all State and Increment
   //  constructors ultimately end up here)
@@ -250,9 +250,9 @@ void Fields::read(const eckit::Configuration & conf) {
     fspace.scatter(globalData, fld);
 
     // apply mask from read in landmask
-    if ( geom_.extraFields().has("gmask") ) {
+    if ( geom_.fields().has("gmask") ) {
       oops::Log::info() << "Applying landmask to variable: " << varName << std::endl;
-      atlas::Field mask_field = geom_.extraFields()["gmask"];
+      atlas::Field mask_field = geom_.fields()["gmask"];
       auto mask = make_view<int, 2>(mask_field);
       auto fd = make_view<double, 2>(atlasFieldSet_.field(varName));
       for (int i = 0; i < mask.size(); i++) {
@@ -389,26 +389,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
     fset.add(fld);
   }
-}
-
-// ----------------------------------------------------------------------------
-
-void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
-  const int size = geom_.functionSpace().size();
-
-  for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
-    ASSERT(fset.has(name));
-
-    auto & fld = atlasFieldSet_.field(name);
-    auto fd    = make_view<double, 2>(fld);
-    auto fd_in = make_view<double, 2>(fset.field(name));
-    for (int j = 0; j < size; j++) {
-        fd(j, 0) += fd_in(j, 0);
-    }
-
-    geom_.functionSpace().adjointHaloExchange(fld);
-  }
+  geom_.functionSpace().haloExchange(fset);
 }
 
 // ----------------------------------------------------------------------------

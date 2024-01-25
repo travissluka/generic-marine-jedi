@@ -21,13 +21,13 @@ include( genericMarine_compiler_flags )
 # Dependencies
 ################################################################################
 find_package( NetCDF REQUIRED COMPONENTS C CXX)
-find_package( eckit  1.20.2   REQUIRED)
-find_package( fckit  0.9.5    REQUIRED)
-find_package( atlas  0.31.1   REQUIRED)
-find_package( oops   1.6.0    REQUIRED)
-find_package( saber  1.6.0    REQUIRED)
-find_package( ioda   2.5.0    REQUIRED)
-find_package( ufo    1.6.0    REQUIRED)
+find_package( eckit  1.23.0   REQUIRED)
+find_package( fckit  0.10.1    REQUIRED)
+find_package( atlas  0.35.0   REQUIRED)
+find_package( oops   1.9.0    REQUIRED)
+find_package( saber  1.9.0    REQUIRED)
+find_package( ioda   2.8.0    REQUIRED)
+find_package( ufo    1.9.0    REQUIRED)
 
 
 ################################################################################

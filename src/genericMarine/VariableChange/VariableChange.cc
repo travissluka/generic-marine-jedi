@@ -15,7 +15,7 @@ namespace genericMarine {
 
 // -----------------------------------------------------------------------------
 
-VariableChange::VariableChange(const Parameters_ & params,
+VariableChange::VariableChange(const eckit::Configuration &,
                                const Geometry & geom)
     : geom_(geom) {
 }
@@ -39,14 +39,14 @@ void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
     } else if (name == "sea_area_fraction") {
       // convert integer land mask to a floating point field
       auto src = atlas::array::make_view<int, 2>(
-        geom_.extraFields().field("gmask"));
+        geom_.fields().field("gmask"));
       for (int j=0; j < size; j++) {
         dst(j, 0) = static_cast<double>(src(j, 0));
       }
 
     } else if (name == "distanceToCoast") {
       auto src = atlas::array::make_view<double, 2>(
-        geom_.extraFields().field("distanceToCoast"));
+        geom_.fields().field("distanceToCoast"));
       for (int j=0; j < size; j++) {
         dst(j, 0) = src(j, 0); }
 

@@ -42,9 +42,12 @@ double interp(const double lat, const std::vector<double> & lats,
 // -----------------------------------------------------------------------------
 
 ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
-                                         const ModelZonalAdvectionParameters & params)
-  : ModelAdvectionBase(geom, params)
+                                         const eckit::Configuration & conf)
+  : ModelAdvectionBase(geom, oops::validateAndDeserialize<ModelZonalAdvectionParameters>(conf))
 {
+  ModelZonalAdvectionParameters params;
+  params.deserialize(conf);
+
   // make sure input parameters are correct
   const double coast_dist = params.coastDist.value();
   ASSERT(coast_dist >= 0.0);
@@ -60,7 +63,7 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
   auto cx = atlas::array::make_view<double, 1> (phaseSpeed_.field("cx"));
   auto cy = atlas::array::make_view<double, 1> (phaseSpeed_.field("cy"));
-  auto coastdist = atlas::array::make_view<double, 2>(geom_.extraFields().field("distanceToCoast"));
+  auto coastdist = atlas::array::make_view<double, 2>(geom_.fields().field("distanceToCoast"));
   auto lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
 
   // set a horizontally varying u

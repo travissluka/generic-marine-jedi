@@ -55,11 +55,11 @@ void ModelAdvectionBase::initialize(State & xx) const {
 
 void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
-  double missing; missing = util::missingValue(missing);
+  double missing; missing = util::missingValue<double>();
 
   // get various data views we need
-  auto dx = atlas::array::make_view<double, 2>(geom_.extraFields().field("dx"));
-  auto dy = atlas::array::make_view<double, 2>(geom_.extraFields().field("dy"));
+  auto dx = atlas::array::make_view<double, 2>(geom_.fields().field("dx"));
+  auto dy = atlas::array::make_view<double, 2>(geom_.fields().field("dy"));
   auto cx = atlas::array::make_view<double, 1>(phaseSpeed_.field("cx"));
   auto cy = atlas::array::make_view<double, 1>(phaseSpeed_.field("cy"));
 

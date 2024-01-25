@@ -11,38 +11,40 @@ geometry:
   landmask:
     filename: landmask.nc
 
-input variables: [seaSurfaceTemperature]
-
 background:
   date: &date 2018-04-15T12:00:00Z
   filename: bkg.nc
   state variables: [seaSurfaceTemperature]
 
-bump:
-  io:
-    data directory: bump/
-  drivers:
-    multivariate strategy: univariate
-    compute nicas: true
-    write local nicas: true
-  model:
-    do not cross mask boundaries: true
-  nicas:
-    resolution: 6.0
-  grids:
-  - model:
-      variables: [seaSurfaceTemperature]
-    io:
-      files prefix: bump
-
-input fields:
-- parameter: rh
-  file:
-    date: *date
-    filename: bump_rh.nc
-    state variables: [seaSurfaceTemperature]
-- parameter: rv
-  file:
-    date: *date
-    filename: bump_rv.nc
-    state variables: [seaSurfaceTemperature]
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      io:
+        data directory: bump/
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        write local nicas: true
+      model:
+        do not cross mask boundaries: true
+      nicas:
+        resolution: 10.0
+        max horizontal grid size: 1000000
+      grids:
+      - model:
+          variables: [seaSurfaceTemperature]
+        io:
+          files prefix: bump
+      input model files:
+      - parameter: rh
+        file:
+          date: *date
+          filename: bump_rh.nc
+          state variables: [seaSurfaceTemperature]
+      - parameter: rv
+        file:
+          date: *date
+          filename: bump_rv.nc
+          state variables: [seaSurfaceTemperature]
