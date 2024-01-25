@@ -30,7 +30,8 @@ background error:
       model:
         do not cross mask boundaries: true
       nicas:
-        resolution: 6.0
+        resolution: 10.0
+        max horizontal grid size: 1000000
       grids:
       - model:
           variables: [seaSurfaceTemperature]
