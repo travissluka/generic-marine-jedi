@@ -84,7 +84,8 @@ variational:
     online diagnostics:
       write increment: true
       increment:
-        prefix: data_output/3dvar.inc
+        state component:
+          prefix: data_output/3dvar.inc
 
 output:
   prefix: data_output/3dvar.an

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
 #include "oops/util/parameters/RequiredParameter.h"
@@ -36,6 +38,7 @@ namespace genericMarine {
   class ModelAdvectionBaseParameters:public oops::Parameters {
     OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, Parameters)
    public:
+    oops::OptionalParameter<std::string> name{"name", this};
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
     oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
     oops::RequiredParameter<oops::Variables> vars{"variables", this};

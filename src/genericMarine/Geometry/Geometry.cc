@@ -240,7 +240,6 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
   for (int j = 0; j < size; j++)
     vMask(j, 0) = static_cast<double>(vGmask(j, 0));
   fields_.add(mask);
-
 }
 
 // ----------------------------------------------------------------------------

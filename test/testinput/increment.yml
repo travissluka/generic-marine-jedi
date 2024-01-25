@@ -13,7 +13,11 @@ increment test:
   date: 1985-01-01T12:00:00Z
   tolerance: 1e-12
   skip rms by level test: true
-
+  dirac:
+    variables:
+    - name: seaSurfaceTemperature
+      ixdir: [20, 50, 100, 100, 150, 200, 250, 300, 350]
+      iydir: [10, 25, 85, 50,  75,  100, 125, 150, 175]
 test:
   reference filename: testref/increment.ref
   test output filename: testoutput/increment.ref

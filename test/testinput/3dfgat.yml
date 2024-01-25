@@ -100,7 +100,8 @@ variational:
     online diagnostics:
       write increment: true
       increment:
-        prefix: data_output/3dfgat.inc
+        state component:
+          prefix: data_output/3dfgat.inc
 
 output:
   prefix: data_output/3dfgat.an
