@@ -135,7 +135,7 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   // halo mask (needed for SABER)
   // NOTE: this has to be done AFTER the halo exchange, otherwise it would be all 1 !
   atlas::Field hmask = functionSpace().createField<int>(
-      atlas::option::levels(1) | atlas::option::name("hmask"));
+      atlas::option::levels(1) | atlas::option::name("owned"));
   auto vHmask = atlas::array::make_view<int, 2>(hmask);
   vHmask.assign(0);
   for (int i=0; i < fs.size(); i++) {
@@ -241,15 +241,6 @@ void Geometry::loadLandMask(const eckit::Configuration &conf) {
     vMask(j, 0) = static_cast<double>(vGmask(j, 0));
   fields_.add(mask);
 
-  // owned field
-  atlas::Field owned = functionSpace_.createField<int>(
-                        atlas::option::levels(1) |
-                        atlas::option::name("owned"));
-  auto vOwned = atlas::array::make_view<int, 2>(owned);
-  auto vGhost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-  for (int j = 0; j < size; j++)
-    vOwned(j, 0) = vGhost(j) ? 0 : 1;
-  fields_.add(owned);
 }
 
 // ----------------------------------------------------------------------------
