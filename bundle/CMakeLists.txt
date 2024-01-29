@@ -26,11 +26,11 @@ include( $ENV{jedi_cmake_ROOT}/share/jedicmake/Functions/git_functions.cmake )
 
 # repos to download
 # TODO remove the internal
-ecbuild_bundle( PROJECT oops            GIT "https://github.com/jcsda-internal/oops.git"            TAG 1.9.1 )
-ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda-internal/saber.git"           TAG 1.9.0 )
-ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda-internal/ioda.git"            TAG 2.8.0 )
+ecbuild_bundle( PROJECT oops            GIT "https://github.com/jcsda/oops.git"            TAG 1.9.1 )
+ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda/saber.git"           TAG 1.9.0 )
+ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda/ioda.git"            TAG 2.8.0 )
 #ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda/ioda-converters.git" TAG 0251b27 )
-ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda-internal/ufo.git"             TAG 1.9.0 )
+ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda/ufo.git"             TAG 1.9.0 )
 ecbuild_bundle( PROJECT genericMarine   SOURCE ../)
 
 ecbuild_bundle_finalize()
