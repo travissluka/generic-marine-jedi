@@ -12,6 +12,7 @@
 #include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
 #include "oops/util/parameters/RequiredParameter.h"
+#include "oops/util/parameters/Parameter.h"
 
 // forward declarations
 namespace genericMarine {
@@ -42,6 +43,7 @@ namespace genericMarine {
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
     oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
     oops::RequiredParameter<oops::Variables> vars{"variables", this};
+    oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
   };
 
 //-----------------------------------------------------------------------------
@@ -74,7 +76,8 @@ namespace genericMarine {
 
     // Value at boundary = bc_a*f_x0 + bc_b where
     // f_x0 is the value of a neighboring valid grid point.
-    double bc_a_, bc_b_;
+    const double bc_a_, bc_b_;
+    const double asselin_;
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 
