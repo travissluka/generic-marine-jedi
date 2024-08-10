@@ -32,8 +32,8 @@ namespace genericMarine {
     // Dirichlet boundary conditions for incoming flow.
     // Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
     // Outflow assumes Neumann conditions.
-    oops::RequiredParameter<double> a{"a", this};
-    oops::RequiredParameter<double> b{"b", this};
+    oops::Parameter<double> a{"a", 0.8, this};
+    oops::Parameter<double> b{"b", 0.0, this};
   };
 
   class ModelAdvectionBaseParameters:public oops::Parameters {
@@ -41,7 +41,8 @@ namespace genericMarine {
    public:
     oops::OptionalParameter<std::string> name{"name", this};
     oops::RequiredParameter<util::Duration> tstep{"tstep", this};
-    oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
+    oops::Parameter<BoundaryConditionParameters> boundary{"boundary condition",
+      BoundaryConditionParameters(), this};
     oops::RequiredParameter<oops::Variables> vars{"variables", this};
     oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
   };

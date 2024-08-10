@@ -13,6 +13,7 @@
 #include "genericMarine/Model/ModelAdvectionBase.h"
 
 #include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/Parameter.h"
 
 namespace eckit {
   class Configuration;
@@ -35,7 +36,7 @@ namespace genericMarine {
     OOPS_CONCRETE_PARAMETERS(ModelZonalAdvectionParameters, ModelAdvectionBaseParameters)
    public:
     oops::RequiredParameter<SpeedParameter> speed{"speed", this};
-    oops::RequiredParameter<double> coastDist{"coastal damping distance", this};
+    oops::Parameter<double> coastDist{"coastal damping distance", 0.0, this};
   };
 
 //-----------------------------------------------------------------------------
