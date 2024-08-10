@@ -23,7 +23,8 @@ ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
                                        const ModelAdvectionBaseParameters & params)
   : geom_(geom), tstep_(params.tstep), phaseSpeed_(), vars_(params.vars),
     bc_a_(params.boundary.value().a),
-    bc_b_(params.boundary.value().b) {
+    bc_b_(params.boundary.value().b),
+    asselin_(params.asselinFilter.value()) {
   // create zero u/v fields
   atlas::Field cx = geom_.functionSpace().createField<double>(atlas::option::name("cx"));
   atlas::Field cy = geom_.functionSpace().createField<double>(atlas::option::name("cy"));
@@ -155,6 +156,9 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
           // leapfrog
           f_tp1(idx, 0) = f_tm1(idx, 0) - 2.0*tstep_.toSeconds()*dfdt;
         }
+
+        // asselin time filter
+        f_t0(idx, 0) += asselin_ * (f_tp1(idx, 0) - 2.0*f_t0(idx, 0) + f_tm1(idx, 0));
 
         // move t=0 to t-1
         f_tm1(idx, 0) = f_t0(idx, 0);
