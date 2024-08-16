@@ -122,8 +122,43 @@ void ModelAdvectionBase::advectionStep(const atlas::Field & f, atlas::Field & te
   }
 }
 
-void ModelAdvectionBase::diffusionStep(const atlas::Field & xx, atlas::Field & tendency) const {
+void ModelAdvectionBase::diffusionStep(const atlas::Field & f, atlas::Field & tendency, double max_dt) const {
+  // TODO(travis) this could be made more efficient by precalcualting the max
+  // diffusion coefficient and dx^2 dy^2 terms
+  const atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  const double missing = util::missingValue<double>();
 
+  // get various views we'll need
+  const auto & f_t0 = atlas::array::make_view<double, 2>(f);
+  auto dfdt = atlas::array::make_view<double, 2>(tendency);
+  const auto & dx = atlas::array::make_view<double, 2>(geom_.fields().field("dx"));
+  const auto & dy = atlas::array::make_view<double, 2>(geom_.fields().field("dy"));
+
+  // calculate horizontal derivatives
+  for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
+    for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
+      const atlas::idx_t idx = fspace.index(ii, jj);
+      const atlas::idx_t idx_xp1 = fspace.index(ii+1, jj);
+      const atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);
+      const atlas::idx_t idx_yp1 = fspace.index(ii, jj+1);
+      const atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
+
+      // skip land
+      if (f_t0(idx, 0) == missing) continue;
+
+      // limit the diffusion when it would violate CFL condition
+      double diffusion = diffusion_;
+      diffusion = std::min(diffusion, 0.5*dx(idx, 0)*dx(idx, 0) / max_dt);
+      diffusion = std::min(diffusion, 0.5*dy(idx, 0)*dy(idx, 0) / max_dt);
+
+      double x = 0.0, y = 0.0;
+      if (f_t0(idx_xp1, 0) != missing) x += f_t0(idx_xp1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_xm1, 0) != missing) x += f_t0(idx_xm1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_yp1, 0) != missing) y += f_t0(idx_yp1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_ym1, 0) != missing) y += f_t0(idx_ym1, 0) - f_t0(idx, 0);
+      dfdt(idx, 0) += diffusion * (x / (dx(idx,0)*dx(idx,0)) + y / (dy(idx,0)*dy(idx,0)));
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -151,7 +186,7 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
 
   // calculate advection and diffusion tendencies
   advectionStep(f_t0, dfdt);
-  diffusionStep(leapfrogInit ? f_t0 : xx_tm1_[0] , dfdt);
+  diffusionStep(leapfrogInit ? f_t0 : xx_tm1_[0] , dfdt, 2.0*tstep_.toSeconds());
 
   // timestep with the tendencies
   const double dt = tstep_.toSeconds() * (leapfrogInit ? 1.0 : 2.0);
@@ -159,16 +194,17 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   const auto v_prev = atlas::array::make_view<double, 2>(f_prev);
   for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
     for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
-      atlas::idx_t idx = fspace.index(ii, jj);
+      const atlas::idx_t idx = fspace.index(ii, jj);
+
       if (v_prev(idx, 0) == missing) continue;
 
       // apply timestep
       double v_tp1 = v_prev(idx, 0) + dt * v_dfdt(idx, 0);
 
       // apply Asselin time filter
-      // if (!leapfrogInit) {
+      if (!leapfrogInit) {
         v_t0(idx, 0) += asselin_ * (v_tp1 - 2.0*v_t0(idx, 0) + v_tm1(idx, 0));
-      // }
+      }
 
       // move time slices
     v_tm1(idx, 0) = v_t0(idx, 0);
@@ -177,7 +213,6 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   }
   f_t0.set_dirty();
   f_tm1.set_dirty();
-
 
   xx.validTime() += tstep_;
 }

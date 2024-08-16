@@ -72,7 +72,7 @@ namespace genericMarine {
 
    private:
     void advectionStep(const atlas::Field &, atlas::Field &) const;
-    void diffusionStep(const atlas::Field &, atlas::Field &) const;
+    void diffusionStep(const atlas::Field &, atlas::Field &, double) const;
 
     void print(std::ostream &) const;
     util::Duration tstep_;
