@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <algorithm>
+
 #include "genericMarine/Traits.h"
 #include "genericMarine/Model/ModelAdvectionBase.h"
 #include "genericMarine/Geometry/Geometry.h"
@@ -122,7 +124,8 @@ void ModelAdvectionBase::advectionStep(const atlas::Field & f, atlas::Field & te
   }
 }
 
-void ModelAdvectionBase::diffusionStep(const atlas::Field & f, atlas::Field & tendency, double max_dt) const {
+void ModelAdvectionBase::diffusionStep(const atlas::Field & f, atlas::Field & tendency,
+    double max_dt) const {
   // TODO(travis) this could be made more efficient by precalcualting the max
   // diffusion coefficient and dx^2 dy^2 terms
   const atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
@@ -156,7 +159,7 @@ void ModelAdvectionBase::diffusionStep(const atlas::Field & f, atlas::Field & te
       if (f_t0(idx_xm1, 0) != missing) x += f_t0(idx_xm1, 0) - f_t0(idx, 0);
       if (f_t0(idx_yp1, 0) != missing) y += f_t0(idx_yp1, 0) - f_t0(idx, 0);
       if (f_t0(idx_ym1, 0) != missing) y += f_t0(idx_ym1, 0) - f_t0(idx, 0);
-      dfdt(idx, 0) += diffusion * (x / (dx(idx,0)*dx(idx,0)) + y / (dy(idx,0)*dy(idx,0)));
+      dfdt(idx, 0) += diffusion * (x / (dx(idx, 0)*dx(idx, 0)) + y / (dy(idx, 0)*dy(idx, 0)));
     }
   }
 }
@@ -170,7 +173,7 @@ void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
   if (leapfrogInit) xx_tm1_ = util::copyFieldSet(xx.fieldSet());
 
   // existing fields we'll need
-  auto & f_t0 = xx.fieldSet()[0];  // TODO why is it missing variable names??
+  auto & f_t0 = xx.fieldSet()[0];  // TODO(travis) why is it missing variable names??
   auto v_t0 = atlas::array::make_view<double, 2>(f_t0);
   auto & f_tm1 = xx_tm1_[0];
   auto v_tm1 = atlas::array::make_view<double, 2>(f_tm1);
