@@ -44,6 +44,7 @@ namespace genericMarine {
     oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
     oops::RequiredParameter<oops::Variables> vars{"variables", this};
     oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
+    oops::Parameter<double> diffusion{"diffusion", 0.0, this};
   };
 
 //-----------------------------------------------------------------------------
@@ -70,6 +71,9 @@ namespace genericMarine {
     atlas::FieldSet phaseSpeed_;
 
    private:
+    void advectionStep(const atlas::Field &, atlas::Field &) const;
+    void diffusionStep(const atlas::Field &, atlas::Field &, double) const;
+
     void print(std::ostream &) const;
     util::Duration tstep_;
     const oops::Variables vars_;
@@ -78,6 +82,7 @@ namespace genericMarine {
     // f_x0 is the value of a neighboring valid grid point.
     const double bc_a_, bc_b_;
     const double asselin_;
+    const double diffusion_;
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 

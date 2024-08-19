@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <algorithm>
+
 #include "genericMarine/Traits.h"
 #include "genericMarine/Model/ModelAdvectionBase.h"
 #include "genericMarine/Geometry/Geometry.h"
@@ -24,6 +26,7 @@ ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
   : geom_(geom), tstep_(params.tstep), phaseSpeed_(), vars_(params.vars),
     bc_a_(params.boundary.value().a),
     bc_b_(params.boundary.value().b),
+    diffusion_(params.diffusion.value()),
     asselin_(params.asselinFilter.value()) {
   // create zero u/v fields
   atlas::Field cx = geom_.functionSpace().createField<double>(atlas::option::name("cx"));
@@ -54,130 +57,175 @@ void ModelAdvectionBase::initialize(State & xx) const {
 
 // -----------------------------------------------------------------------------
 
-void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
-  atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
-  double missing; missing = util::missingValue<double>();
+void ModelAdvectionBase::advectionStep(const atlas::Field & f, atlas::Field & tendency) const {
+  const atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  const double missing = util::missingValue<double>();
 
-  // get various data views we need
-  auto dx = atlas::array::make_view<double, 2>(geom_.fields().field("dx"));
-  auto dy = atlas::array::make_view<double, 2>(geom_.fields().field("dy"));
-  auto cx = atlas::array::make_view<double, 1>(phaseSpeed_.field("cx"));
-  auto cy = atlas::array::make_view<double, 1>(phaseSpeed_.field("cy"));
+  // get various views we'll need
+  const auto & f_t0 = atlas::array::make_view<double, 2>(f);
+  auto dfdt = atlas::array::make_view<double, 2>(tendency);
+  const auto & dx = atlas::array::make_view<double, 2>(geom_.fields().field("dx"));
+  const auto & dy = atlas::array::make_view<double, 2>(geom_.fields().field("dy"));
+  const auto & cx = atlas::array::make_view<double, 1>(phaseSpeed_.field("cx"));
+  const auto & cy = atlas::array::make_view<double, 1>(phaseSpeed_.field("cy"));
 
-  // fieldsets at various times (past, present, future)
-  atlas::FieldSet xx_tp1 = xx.fieldSet();
-  atlas::FieldSet xx_t0 = util::copyFieldSet(xx_tp1);
-  bool leapfrog_init = xx_tm1_.empty();
-  if (leapfrog_init) xx_tm1_ = util::copyFieldSet(xx_t0);
+  // calculate horizontal derivatives
+  for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
+    for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
+      const atlas::idx_t idx = fspace.index(ii, jj);
+      const atlas::idx_t idx_xp1 = fspace.index(ii+1, jj);
+      const atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);
+      const atlas::idx_t idx_yp1 = fspace.index(ii, jj+1);
+      const atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
 
-  // temporary working fields, used later
-  atlas::Field dfdx_field = fspace.createField<double>();
-  atlas::Field dfdy_field = fspace.createField<double>();
-  auto dfdx = atlas::array::make_view<double, 1>(dfdx_field);
-  auto dfdy = atlas::array::make_view<double, 1>(dfdy_field);
+      // skip land
+      if (f_t0(idx, 0) == missing) continue;
 
-  // for each variable in the model
-  for (atlas::idx_t var = 0; var < xx_t0.size(); var++) {
-    // various data views we need
-    auto f_t0 = atlas::array::make_view<double, 2>(xx_t0[var]);
-    auto f_tp1 = atlas::array::make_view<double, 2>(xx_tp1[var]);
-    auto f_tm1 = atlas::array::make_view<double, 2>(xx_tm1_[var]);
+      // note on boundary conditions for df/dx and df/dy:
+      // For outgoing flow, Neumann conditions are used (derivative is specified) so that
+      // the second derivative is 0.
+      // For incoming flow, boundary value = bc_a_*f_x0 + bc_b_ where f_x0 is a valid
+      // neighboring grid point
+      const double f_x0  = f_t0(idx, 0);
+      const double inflow_bc = bc_a_*f_x0 + bc_b_;
 
-    // calculate the horizontal derivative
-    dfdx.assign(0.0);
-    dfdy.assign(0.0);
-    for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
-      for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
-        atlas::idx_t idx = fspace.index(ii, jj);
-        atlas::idx_t idx_xp1 = fspace.index(ii+1, jj);
-        atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);
-        atlas::idx_t idx_yp1 = fspace.index(ii, jj+1);
-        atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
-
-        // skip land
-        if (f_t0(idx, 0) == missing) continue;
-
-        // note on boundary conditions for df/dx and df/dy:
-        // For outgoing flow, Neumann conditions are used (derivative is specified) so that
-        // the second derivative is 0.
-        // For incoming flow, boundary value = bc_a_*f_x0 + bc_b_ where f_x0 is a valid
-        // neighboring grid point
-        double f_x0  = f_t0(idx, 0);
-        double inflow_bc = bc_a_*f_x0 + bc_b_;
-
-        // df/dx
-        double f_xm1 = f_t0(idx_xm1, 0);
-        double f_xp1 = f_t0(idx_xp1, 0);
-        if (f_xm1 == missing) {
-          // set boundary condition for missing left neighbor
-          f_xm1 = inflow_bc;
-          if (cx(idx) < 0.0 && f_xp1 != missing) f_xm1 = 2.0*f_x0 - f_xp1;
-        }
-        if (f_xp1 == missing) {
-        // set boundary condition for missing right neighbor
-         f_xp1 = inflow_bc;
-         if (cx(idx) > 0.0 && f_xm1 != missing) f_xp1 =  2.0*f_x0 - f_xm1;
-        }
-        dfdx(idx) = (f_xp1 - f_xm1) / (2.0*dx(idx, 0));
-
-        // df/dy
-        double f_ym1 = f_t0(idx_ym1, 0);
-        double f_yp1 = f_t0(idx_yp1, 0);
-        if (f_ym1 == missing) {
-          // set boundary condition for missing neighbor below
-          f_ym1 = inflow_bc;
-          if (cy(idx) < 0.0 && f_yp1 != missing) f_ym1 = 2.0*f_x0 - f_yp1;
-        }
-        if (f_yp1 == missing) {
-          // set boundary condition for missing neighbor above
-          f_yp1 = inflow_bc;
-          if (cy(idx) > 0.0 && f_ym1 != missing) f_yp1 = 2.0*f_x0 - f_ym1;
-        }
-        dfdy(idx) = (f_yp1 - f_ym1) / (2.0*dy(idx, 0));
-        // TODO(travis) double check the signs for cy, it depends on how grid is loaded which way
-        // is up this assumes positive lat is at start of grid (opposite of what you'd expect)
+      // df/dx * dx/dt
+      double f_xm1 = f_t0(idx_xm1, 0);
+      double f_xp1 = f_t0(idx_xp1, 0);
+      if (f_xm1 == missing) {
+        // set boundary condition for missing left neighbor
+        f_xm1 = inflow_bc;
+        if (cx(idx) < 0.0 && f_xp1 != missing) f_xm1 = 2.0*f_x0 - f_xp1;
       }
-    }
-
-    // time derivatives
-    for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
-      for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
-        atlas::idx_t idx = fspace.index(ii, jj);
-
-        // skip land
-        if (f_t0(idx, 0) == missing) continue;
-
-        // calculate and apply add df/dt
-        double dfdt = cx(idx) * dfdx(idx) + cy(idx) * dfdy(idx);
-        if (leapfrog_init) {
-          // euler forward (for very first timestep only)
-          f_tp1(idx, 0) = f_t0(idx, 0) - tstep_.toSeconds()*dfdt;
-        } else {
-          // leapfrog
-          f_tp1(idx, 0) = f_tm1(idx, 0) - 2.0*tstep_.toSeconds()*dfdt;
-        }
-
-        // asselin time filter
-        f_t0(idx, 0) += asselin_ * (f_tp1(idx, 0) - 2.0*f_t0(idx, 0) + f_tm1(idx, 0));
-
-        // move t=0 to t-1
-        f_tm1(idx, 0) = f_t0(idx, 0);
+      if (f_xp1 == missing) {
+      // set boundary condition for missing right neighbor
+       f_xp1 = inflow_bc;
+       if (cx(idx) > 0.0 && f_xm1 != missing) f_xp1 =  2.0*f_x0 - f_xm1;
       }
-    }
+      dfdt(idx, 0) -= cx(idx)* (f_xp1 - f_xm1) / (2.0*dx(idx, 0));
 
-    // update halos
-    fspace.haloExchange(xx_tp1[var]);
-    fspace.haloExchange(xx_tm1_[var]);
+      // df/dy * dy/dt
+      double f_ym1 = f_t0(idx_ym1, 0);
+      double f_yp1 = f_t0(idx_yp1, 0);
+      if (f_ym1 == missing) {
+        // set boundary condition for missing neighbor below
+        f_ym1 = inflow_bc;
+        if (cy(idx) < 0.0 && f_yp1 != missing) f_ym1 = 2.0*f_x0 - f_yp1;
+      }
+      if (f_yp1 == missing) {
+        // set boundary condition for missing neighbor above
+        f_yp1 = inflow_bc;
+        if (cy(idx) > 0.0 && f_ym1 != missing) f_yp1 = 2.0*f_x0 - f_ym1;
+      }
+      dfdt(idx, 0) -= cy(idx) * (f_yp1 - f_ym1) / (2.0*dy(idx, 0));
+      // TODO(travis) double check the signs for cy, it depends on how grid is loaded which way
+      // is up this assumes positive lat is at start of grid (opposite of what you'd expect)
+    }
   }
+}
+
+void ModelAdvectionBase::diffusionStep(const atlas::Field & f, atlas::Field & tendency,
+    double max_dt) const {
+  // TODO(travis) this could be made more efficient by precalcualting the max
+  // diffusion coefficient and dx^2 dy^2 terms
+  const atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  const double missing = util::missingValue<double>();
+
+  // get various views we'll need
+  const auto & f_t0 = atlas::array::make_view<double, 2>(f);
+  auto dfdt = atlas::array::make_view<double, 2>(tendency);
+  const auto & dx = atlas::array::make_view<double, 2>(geom_.fields().field("dx"));
+  const auto & dy = atlas::array::make_view<double, 2>(geom_.fields().field("dy"));
+
+  // calculate horizontal derivatives
+  for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
+    for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
+      const atlas::idx_t idx = fspace.index(ii, jj);
+      const atlas::idx_t idx_xp1 = fspace.index(ii+1, jj);
+      const atlas::idx_t idx_xm1 = fspace.index(ii-1, jj);
+      const atlas::idx_t idx_yp1 = fspace.index(ii, jj+1);
+      const atlas::idx_t idx_ym1 = fspace.index(ii, jj-1);
+
+      // skip land
+      if (f_t0(idx, 0) == missing) continue;
+
+      // limit the diffusion when it would violate CFL condition
+      double diffusion = diffusion_;
+      diffusion = std::min(diffusion, 0.5*dx(idx, 0)*dx(idx, 0) / max_dt);
+      diffusion = std::min(diffusion, 0.5*dy(idx, 0)*dy(idx, 0) / max_dt);
+
+      double x = 0.0, y = 0.0;
+      if (f_t0(idx_xp1, 0) != missing) x += f_t0(idx_xp1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_xm1, 0) != missing) x += f_t0(idx_xm1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_yp1, 0) != missing) y += f_t0(idx_yp1, 0) - f_t0(idx, 0);
+      if (f_t0(idx_ym1, 0) != missing) y += f_t0(idx_ym1, 0) - f_t0(idx, 0);
+      dfdt(idx, 0) += diffusion * (x / (dx(idx, 0)*dx(idx, 0)) + y / (dy(idx, 0)*dy(idx, 0)));
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void ModelAdvectionBase::step(State & xx, const ModelAuxControl &) const {
+  const atlas::functionspace::StructuredColumns fspace(geom_.functionSpace());
+  const double missing = util::missingValue<double>();
+  const bool leapfrogInit = xx_tm1_.empty();
+  if (leapfrogInit) xx_tm1_ = util::copyFieldSet(xx.fieldSet());
+
+  // existing fields we'll need
+  auto & f_t0 = xx.fieldSet()[0];  // TODO(travis) why is it missing variable names??
+  auto v_t0 = atlas::array::make_view<double, 2>(f_t0);
+  auto & f_tm1 = xx_tm1_[0];
+  auto v_tm1 = atlas::array::make_view<double, 2>(f_tm1);
+
+  // make sure halos are up to date
+  f_t0.haloExchange();
+  f_tm1.haloExchange();
+
+  // initialize zero tendency (df/dt)
+  atlas::Field dfdt = f_t0.clone();
+  auto v_dfdt = atlas::array::make_view<double, 2>(dfdt);
+  v_dfdt.assign(0.0);
+
+  // calculate advection and diffusion tendencies
+  advectionStep(f_t0, dfdt);
+  diffusionStep(leapfrogInit ? f_t0 : xx_tm1_[0] , dfdt, 2.0*tstep_.toSeconds());
+
+  // timestep with the tendencies
+  const double dt = tstep_.toSeconds() * (leapfrogInit ? 1.0 : 2.0);
+  const auto & f_prev = leapfrogInit ? f_t0 : f_tm1;
+  const auto v_prev = atlas::array::make_view<double, 2>(f_prev);
+  for (atlas::idx_t jj = fspace.j_begin(); jj < fspace.j_end(); jj++) {
+    for (atlas::idx_t ii = fspace.i_begin(jj); ii < fspace.i_end(jj); ii++) {
+      const atlas::idx_t idx = fspace.index(ii, jj);
+
+      if (v_prev(idx, 0) == missing) continue;
+
+      // apply timestep
+      double v_tp1 = v_prev(idx, 0) + dt * v_dfdt(idx, 0);
+
+      // apply Asselin time filter
+      if (!leapfrogInit) {
+        v_t0(idx, 0) += asselin_ * (v_tp1 - 2.0*v_t0(idx, 0) + v_tm1(idx, 0));
+      }
+
+      // move time slices
+    v_tm1(idx, 0) = v_t0(idx, 0);
+    v_t0(idx, 0) = v_tp1;
+    }
+  }
+  f_t0.set_dirty();
+  f_tm1.set_dirty();
 
   xx.validTime() += tstep_;
 }
 
 // -----------------------------------------------------------------------------
 
-  void ModelAdvectionBase::finalize(State & xx) const {
-    xx_tm1_.clear();
-  }
+void ModelAdvectionBase::finalize(State & xx) const {
+  xx_tm1_.clear();
+}
 
-  // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
 }  // namespace genericMarine
