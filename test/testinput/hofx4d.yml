@@ -28,6 +28,8 @@ model:
     latitude: [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
     value:    [ 0.0, -1.0, 0.0, 2.0,  0.0,  -1.0,   0.0]
   #coastal damping distance: 1000.0e3
+  asselin filter: 0.2
+  diffusion: 1.0e2
   boundary condition:
     # Dirichlet boundary conditions for incoming flow.
     # Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.

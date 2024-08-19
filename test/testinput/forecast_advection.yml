@@ -22,6 +22,8 @@ model:
     # (Outflow assumes Neumann conditions.)
     a: 0.8
     b: 0.0
+  asselin filter: 0.2
+  diffusion: 1.0e2
 
 
 initial condition:
