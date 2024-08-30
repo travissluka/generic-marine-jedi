@@ -12,7 +12,7 @@
 #include "genericMarine/Model/ModelZonalAdvection.h"
 
 #include "oops/interface/ModelBase.h"
-
+#include "oops/util/FieldSetHelpers.h"
 namespace genericMarine {
 
 // -----------------------------------------------------------------------------
@@ -71,6 +71,10 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
     cx(idx) = interp(lonlat(idx, 1), lats, speed);
     if (coast_dist > 0.0) cx(idx) *= std::min(coastdist(idx, 0) / coast_dist, 1.0);
   }
+
+  // update the shear based diffusion
+  updateDiffusionParams();
+
 }
 
 // -----------------------------------------------------------------------------

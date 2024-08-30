@@ -32,8 +32,8 @@ namespace genericMarine {
     oops::RequiredParameter<std::vector<double> > value{"value", this};
   };
 
-  class ModelZonalAdvectionParameters:public ModelAdvectionBaseParameters {
-    OOPS_CONCRETE_PARAMETERS(ModelZonalAdvectionParameters, ModelAdvectionBaseParameters)
+  class ModelZonalAdvectionParameters:public ModelAdvectionBase::Parameters {
+    OOPS_CONCRETE_PARAMETERS(ModelZonalAdvectionParameters, ModelAdvectionBase::Parameters)
    public:
     oops::RequiredParameter<SpeedParameter> speed{"speed", this};
     oops::Parameter<double> coastDist{"coastal damping distance", 0.0, this};
