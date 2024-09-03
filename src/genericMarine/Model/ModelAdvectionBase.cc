@@ -24,9 +24,9 @@ namespace genericMarine {
 ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
                                        const Parameters & params)
   : geom_(geom), tstep_(params.tstep), phaseSpeed_(), vars_(params.vars),
-    bc_a_(params.boundary.value().a),
-    bc_b_(params.boundary.value().b),
-    asselin_(params.asselinFilter.value()),
+    bc_a_(params.advection.value().boundary.value().a.value()),
+    bc_b_(params.advection.value().boundary.value().b.value()),
+    asselin_(params.advection.value().asselinFilter.value()),
     diffusionParams_(params.diffusion.value())
 {
   // create zero u/v fields
@@ -102,15 +102,16 @@ void ModelAdvectionBase::updateDiffusionParams() {
       kh(idx, 0) = diffusionParams_.kh;
       ah(idx, 0) = diffusionParams_.ah;
 
-      // calculate shear (du/dy + dv/dx)
-      // todo, include strain?
+      // Smagorinsky horizontal diffusion
+      // calculate shear (du/dy + dv/dx) and tension (du/dx - dv/dy)
       double shear = (cx(idx_yp1) - cx(idx_ym1)) / (2.0*dy(idx, 0)) +
                      (cy(idx_xp1) - cy(idx_xm1)) / (2.0*dx(idx, 0));
-      shear = sqrt(shear*shear);
+      double tension = (cx(idx_xp1) - cx(idx_xm1)) / (2.0*dx(idx, 0)) -
+                       (cy(idx_yp1) - cy(idx_ym1)) / (2.0*dy(idx, 0));
+      double kh_smag =  diffusionParams_.kh_smag * diffusionParams_.kh_smag * sqrt(tension*tension + shear*shear);
 
       // shear based diffusion
-      kh(idx, 0) += std::min(shear * diffusionParams_.kh_shear, 1.0 * diffusionParams_.kh_shear_max);
-      ah(idx, 0) += std::min(shear * diffusionParams_.ah_shear, 1.0 * diffusionParams_.ah_shear_max);
+      kh(idx, 0) += std::min(kh_smag, 1.0 * diffusionParams_.kh_smag_max);
     }
   }
 

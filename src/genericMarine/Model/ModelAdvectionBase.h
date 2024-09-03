@@ -13,6 +13,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/parameters/RequiredParameter.h"
 #include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/ConfigurationParameter.h"
 
 // forward declarations
 namespace genericMarine {
@@ -45,23 +46,34 @@ namespace genericMarine {
         oops::RequiredParameter<double> b{"b", this};
       };
       // -----------------------------------------------------------------------------
+      class AdvectionBase:public oops::Parameters {
+        OOPS_ABSTRACT_PARAMETERS(AdvectionBase, oops::Parameters)
+       public:
+        oops::RequiredParameter<BoundaryCondition> boundary{"boundary condition", this};
+        oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
+      };
+      class Advection:public AdvectionBase {
+        OOPS_CONCRETE_PARAMETERS(Advection, AdvectionBase)
+       public:
+        oops::ConfigurationParameter config{this};
+      };
+
+      // -----------------------------------------------------------------------------
       class Diffusion:public oops::Parameters {
         OOPS_CONCRETE_PARAMETERS(Diffusion,oops::Parameters)
        public:
         oops::Parameter<int> smootherIterations{"coefficient smoothing", 1, this};
         oops::Parameter<double> kh{"Kh", 0.0, this};
         oops::Parameter<double> ah{"Ah", 0.0, this};
-        oops::Parameter<double> kh_shear{"Kh_shear scale", 0.0, this};
-        oops::Parameter<double> kh_shear_max{"Kh_shear max", 0.0, this};
-        oops::Parameter<double> ah_shear{"Ah_shear scale", 0.0, this};
-        oops::Parameter<double> ah_shear_max{"Ah_shear max", 0.0, this};
+        oops::Parameter<double> kh_smag{"Kh_smag scale", 0.0, this};
+        oops::Parameter<double> kh_smag_max{"Kh_smag max", 0.0, this};
+
       };
       // -----------------------------------------------------------------------------
       oops::OptionalParameter<std::string> name{"name", this};
       oops::RequiredParameter<util::Duration> tstep{"tstep", this};
-      oops::RequiredParameter<BoundaryCondition> boundary{"boundary condition", this};
       oops::RequiredParameter<oops::Variables> vars{"variables", this};
-      oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
+      oops::RequiredParameter<Advection> advection{"advection", this};
       oops::Parameter<Diffusion> diffusion{"diffusion", {}, this};
 
     };

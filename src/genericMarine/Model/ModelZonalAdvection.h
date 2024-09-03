@@ -14,6 +14,7 @@
 
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/NumericConstraints.h"
 
 namespace eckit {
   class Configuration;
@@ -24,29 +25,44 @@ namespace eckit {
 namespace genericMarine {
 
 //-----------------------------------------------------------------------------
-
-  class SpeedParameter:public oops::Parameters {
-    OOPS_CONCRETE_PARAMETERS(SpeedParameter, oops::Parameters)
+class ModelZonalAdvection:public ModelAdvectionBase,
+  private util::ObjectCounter<ModelZonalAdvection> {
+ public:
+  // --------------------------------------------------------------------------
+  class Parameters:public ModelAdvectionBase::Parameters {
+    OOPS_CONCRETE_PARAMETERS(Parameters, ModelAdvectionBase::Parameters)
    public:
-    oops::RequiredParameter<std::vector<double> > latitude{"latitude", this};
-    oops::RequiredParameter<std::vector<double> > value{"value", this};
+    // ------------------------------------------------------------------------
+    class Speed:public oops::Parameters {
+      OOPS_CONCRETE_PARAMETERS(Speed, oops::Parameters)
+     public:
+      oops::RequiredParameter<std::vector<double> > latitude{"latitude", this};
+      oops::RequiredParameter<std::vector<double> > value{"value", this};
+    };
+    // ------------------------------------------------------------------------
+    class CoastalDamping:public oops::Parameters {
+      OOPS_CONCRETE_PARAMETERS(CoastalDamping, oops::Parameters)
+     public:
+      oops::Parameter<double> distance{"distance", 0.0, this};
+      oops::Parameter<double> damping{"amount", 1.0, this};
+    };
+    // ------------------------------------------------------------------------
+    class Advection:public ModelAdvectionBase::Parameters::AdvectionBase {
+      OOPS_CONCRETE_PARAMETERS(Advection, ModelAdvectionBase::Parameters::AdvectionBase)
+     public:
+      oops::RequiredParameter<Speed> speed{"speed", this};
+      oops::Parameter<CoastalDamping> coastDamp{"coastal damping", {}, this};
+    };
+
+    // --------------------------------------------------------------------------
+    // oops::RequiredParameter<Advection> advection{"advection", this};
   };
 
-  class ModelZonalAdvectionParameters:public ModelAdvectionBase::Parameters {
-    OOPS_CONCRETE_PARAMETERS(ModelZonalAdvectionParameters, ModelAdvectionBase::Parameters)
-   public:
-    oops::RequiredParameter<SpeedParameter> speed{"speed", this};
-    oops::Parameter<double> coastDist{"coastal damping distance", 0.0, this};
-  };
+  // --------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-
-  class ModelZonalAdvection:public ModelAdvectionBase,
-    private util::ObjectCounter<ModelZonalAdvection> {
-   public:
-    typedef ModelZonalAdvectionParameters Parameters_;
-    ModelZonalAdvection(const Geometry &, const eckit::Configuration &);
-  };
+  typedef Parameters Parameters_;
+  ModelZonalAdvection(const Geometry &, const eckit::Configuration &);
+};
 
 //-----------------------------------------------------------------------------
 }  // namespace genericMarine
