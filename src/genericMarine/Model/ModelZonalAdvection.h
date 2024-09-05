@@ -31,6 +31,7 @@ class ModelZonalAdvection:public ModelAdvectionBase,
   // --------------------------------------------------------------------------
   class Parameters:public ModelAdvectionBase::Parameters {
     OOPS_CONCRETE_PARAMETERS(Parameters, ModelAdvectionBase::Parameters)
+
    public:
     // ------------------------------------------------------------------------
     class Speed:public oops::Parameters {
@@ -55,7 +56,8 @@ class ModelZonalAdvection:public ModelAdvectionBase,
     };
 
     // --------------------------------------------------------------------------
-    // oops::RequiredParameter<Advection> advection{"advection", this};
+    // NOTE: member variable advection is in the base class, but needs to be converted to
+    // ModelZonalAdvection::Parameters::Advection before being used.
   };
 
   // --------------------------------------------------------------------------

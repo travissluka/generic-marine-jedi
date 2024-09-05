@@ -31,13 +31,14 @@ namespace genericMarine {
               private util::ObjectCounter<ModelAdvectionBase>
   {
    public:
-   // -----------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------
     class Parameters:public oops::Parameters {
       OOPS_CONCRETE_PARAMETERS(Parameters, oops::Parameters)
+
      public:
        // -----------------------------------------------------------------------------
-       class BoundaryCondition:public oops::Parameters {
-        OOPS_CONCRETE_PARAMETERS(BoundaryCondition,oops::Parameters)
+      class BoundaryCondition:public oops::Parameters {
+        OOPS_CONCRETE_PARAMETERS(BoundaryCondition, oops::Parameters)
        public:
         // Dirichlet boundary conditions for incoming flow.
         // Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
@@ -60,14 +61,13 @@ namespace genericMarine {
 
       // -----------------------------------------------------------------------------
       class Diffusion:public oops::Parameters {
-        OOPS_CONCRETE_PARAMETERS(Diffusion,oops::Parameters)
+        OOPS_CONCRETE_PARAMETERS(Diffusion, oops::Parameters)
        public:
         oops::Parameter<int> smootherIterations{"coefficient smoothing", 1, this};
         oops::Parameter<double> kh{"Kh", 0.0, this};
         oops::Parameter<double> ah{"Ah", 0.0, this};
         oops::Parameter<double> kh_smag{"Kh_smag scale", 0.0, this};
         oops::Parameter<double> kh_smag_max{"Kh_smag max", 0.0, this};
-
       };
       // -----------------------------------------------------------------------------
       oops::OptionalParameter<std::string> name{"name", this};
@@ -75,7 +75,6 @@ namespace genericMarine {
       oops::RequiredParameter<oops::Variables> vars{"variables", this};
       oops::RequiredParameter<Advection> advection{"advection", this};
       oops::Parameter<Diffusion> diffusion{"diffusion", {}, this};
-
     };
     // -----------------------------------------------------------------------------
 

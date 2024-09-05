@@ -40,8 +40,10 @@ ModelAdvectionBase::ModelAdvectionBase(const Geometry & geom,
   phaseSpeed_.add(cy);
 
   // initialize diffusion parameters
-  atlas::Field kh = geom_.functionSpace().createField<double>(atlas::option::name("kh") | atlas::option::levels(1));
-  atlas::Field ah = geom_.functionSpace().createField<double>(atlas::option::name("ah") | atlas::option::levels(1));
+  atlas::Field kh = geom_.functionSpace().createField<double>(
+    atlas::option::name("kh") | atlas::option::levels(1));
+  atlas::Field ah = geom_.functionSpace().createField<double>(
+    atlas::option::name("ah") | atlas::option::levels(1));
   diffusionCoeffs_.add(kh);
   diffusionCoeffs_.add(ah);
   updateDiffusionParams();
@@ -108,7 +110,8 @@ void ModelAdvectionBase::updateDiffusionParams() {
                      (cy(idx_xp1) - cy(idx_xm1)) / (2.0*dx(idx, 0));
       double tension = (cx(idx_xp1) - cx(idx_xm1)) / (2.0*dx(idx, 0)) -
                        (cy(idx_yp1) - cy(idx_ym1)) / (2.0*dy(idx, 0));
-      double kh_smag =  diffusionParams_.kh_smag * diffusionParams_.kh_smag * sqrt(tension*tension + shear*shear);
+      double kh_smag =  diffusionParams_.kh_smag * diffusionParams_.kh_smag
+                        * sqrt(tension*tension + shear*shear);
 
       // shear based diffusion
       kh(idx, 0) += std::min(kh_smag, 1.0 * diffusionParams_.kh_smag_max);

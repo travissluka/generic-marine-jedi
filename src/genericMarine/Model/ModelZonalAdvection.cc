@@ -45,11 +45,13 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
                                          const eckit::Configuration & conf)
   : ModelAdvectionBase(geom, oops::validateAndDeserialize<ModelAdvectionBase::Parameters>(conf))
 {
-  ModelZonalAdvection::Parameters params  = oops::validateAndDeserialize<ModelZonalAdvection::Parameters>(conf);
+  ModelZonalAdvection::Parameters params  =
+    oops::validateAndDeserialize<ModelZonalAdvection::Parameters>(conf);
 
   // get advection parameters
   ModelZonalAdvection::Parameters::Advection advec_param =
-    oops::validateAndDeserialize<ModelZonalAdvection::Parameters::Advection>(params.advection.value().config.value());
+    oops::validateAndDeserialize<ModelZonalAdvection::Parameters::Advection>(
+      params.advection.value().config.value());
   const auto & speed_param = advec_param.speed.value();
   const std::vector<double> & lats = speed_param.latitude.value();
   const std::vector<double> & speed = speed_param.value.value();
@@ -79,7 +81,6 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
 
   // update the shear based diffusion
   updateDiffusionParams();
-
 }
 
 // -----------------------------------------------------------------------------
