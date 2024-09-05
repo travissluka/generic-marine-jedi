@@ -24,18 +24,26 @@ model:
   name: ZonalAdvection
   tstep: PT1H
   variables: [seaSurfaceTemperature]
-  speed:
-    latitude: [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
-    value:    [ 0.0, -1.0, 0.0, 2.0,  0.0,  -1.0,   0.0]
-  #coastal damping distance: 1000.0e3
-  asselin filter: 0.2
-  diffusion: 1.0e2
-  boundary condition:
-    # Dirichlet boundary conditions for incoming flow.
-    # Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
-    # (Outflow assumes Neumann conditions.)
-    a: 0.8
-    b: 0.0
+  advection:
+    speed:
+      latitude: [60.0, 10.0, 5.0, 0.0, -5.0, -10.0, -60.0]
+      value:    [ 0.0, -1.0, 0.0, 2.0,  0.0,  -1.0,   0.0]
+    coastal damping:
+      distance: 1000.0e3
+      amount: 0.8
+    asselin filter: 0.2
+    boundary condition:
+      # Dirichlet boundary conditions for incoming flow.
+      # Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
+      # (Outflow assumes Neumann conditions.)
+      a: 0.8
+      b: 0.0
+  diffusion:
+    coefficient smoothing: 1
+    Kh: 1.0e2 # m^2/s : laplacian diffusion
+    Kh_smag scale: 2.0e4 # m/s Smagorinsky diffusion length scale
+    Kh_smag max: 1.0e5 # m^2/s : maximum Smagorinsky diffusion
+    Ah: 2.0e10 # m^4/s : biharmonic diffusion
 forecast length: P1D
 
 observations:

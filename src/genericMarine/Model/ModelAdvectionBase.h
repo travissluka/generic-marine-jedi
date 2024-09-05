@@ -11,8 +11,10 @@
 
 #include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
-#include "oops/util/parameters/RequiredParameter.h"
+#include "oops/util/parameters/ConfigurationParameter.h"
+#include "oops/util/parameters/NumericConstraints.h"
 #include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 // forward declarations
 namespace genericMarine {
@@ -26,35 +28,61 @@ namespace genericMarine {
 
 //-----------------------------------------------------------------------------
 
-  class BoundaryConditionParameters:public oops::Parameters {
-    OOPS_CONCRETE_PARAMETERS(BoundaryConditionParameters, Parameters)
-   public:
-    // Dirichlet boundary conditions for incoming flow.
-    // Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
-    // Outflow assumes Neumann conditions.
-    oops::RequiredParameter<double> a{"a", this};
-    oops::RequiredParameter<double> b{"b", this};
-  };
-
-  class ModelAdvectionBaseParameters:public oops::Parameters {
-    OOPS_CONCRETE_PARAMETERS(ModelAdvectionBaseParameters, Parameters)
-   public:
-    oops::OptionalParameter<std::string> name{"name", this};
-    oops::RequiredParameter<util::Duration> tstep{"tstep", this};
-    oops::RequiredParameter<BoundaryConditionParameters> boundary{"boundary condition", this};
-    oops::RequiredParameter<oops::Variables> vars{"variables", this};
-    oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
-    oops::Parameter<double> diffusion{"diffusion", 0.0, this};
-  };
-
-//-----------------------------------------------------------------------------
-
   class ModelAdvectionBase:public oops::interface::ModelBase<Traits>,
               private util::ObjectCounter<ModelAdvectionBase>
   {
    public:
-    typedef ModelAdvectionBaseParameters Parameters_;
-    ModelAdvectionBase(const Geometry &, const ModelAdvectionBaseParameters &);
+    // -----------------------------------------------------------------------------
+    class Parameters:public oops::Parameters {
+      OOPS_CONCRETE_PARAMETERS(Parameters, oops::Parameters)
+
+     public:
+       // -----------------------------------------------------------------------------
+      class BoundaryCondition:public oops::Parameters {
+        OOPS_CONCRETE_PARAMETERS(BoundaryCondition, oops::Parameters)
+       public:
+        // Dirichlet boundary conditions for incoming flow.
+        // Value at boundary = a*f_x0 + b where f_x0 is the value of a neighboring valid grid point.
+        // Outflow assumes Neumann conditions.
+        oops::RequiredParameter<double> a{"a", this};
+        oops::RequiredParameter<double> b{"b", this};
+      };
+      // -----------------------------------------------------------------------------
+      class AdvectionBase:public oops::Parameters {
+        OOPS_ABSTRACT_PARAMETERS(AdvectionBase, oops::Parameters)
+       public:
+        oops::RequiredParameter<BoundaryCondition> boundary{"boundary condition", this};
+        oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this,
+          {oops::minConstraint(0.0), oops::maxConstraint(0.5)}};
+      };
+      class Advection:public AdvectionBase {
+        OOPS_CONCRETE_PARAMETERS(Advection, AdvectionBase)
+       public:
+        oops::ConfigurationParameter config{this};
+      };
+
+      // -----------------------------------------------------------------------------
+      class Diffusion:public oops::Parameters {
+        OOPS_CONCRETE_PARAMETERS(Diffusion, oops::Parameters)
+       public:
+        oops::Parameter<int> smootherIterations{"coefficient smoothing", 1, this,
+          {oops::minConstraint(0)}};
+        oops::Parameter<double> kh{"Kh", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> ah{"Ah", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> kh_smag{"Kh_smag scale", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> kh_smag_max{"Kh_smag max", 0.0, this, {oops::minConstraint(0.0)}};
+      };
+      // -----------------------------------------------------------------------------
+      oops::OptionalParameter<std::string> name{"name", this};
+      oops::RequiredParameter<util::Duration> tstep{"tstep", this};
+      oops::RequiredParameter<oops::Variables> vars{"variables", this};
+      oops::RequiredParameter<Advection> advection{"advection", this};
+      oops::Parameter<Diffusion> diffusion{"diffusion", {}, this};
+    };
+    // -----------------------------------------------------------------------------
+
+    typedef Parameters Parameters_;
+    ModelAdvectionBase(const Geometry &, const Parameters &);
     virtual ~ModelAdvectionBase() = 0;
 
     // main model run methods
@@ -67,8 +95,12 @@ namespace genericMarine {
     const oops::Variables & variables() const {return vars_;}
 
    protected:
+    void updateDiffusionParams();
+
     const Geometry & geom_;
     atlas::FieldSet phaseSpeed_;
+    Parameters::Diffusion diffusionParams_;
+    atlas::FieldSet diffusionCoeffs_;
 
    private:
     void advectionStep(const atlas::Field &, atlas::Field &) const;
@@ -82,7 +114,6 @@ namespace genericMarine {
     // f_x0 is the value of a neighboring valid grid point.
     const double bc_a_, bc_b_;
     const double asselin_;
-    const double diffusion_;
     mutable atlas::FieldSet xx_tm1_;  // model state at previous time, for leapfrog scheme
   };
 

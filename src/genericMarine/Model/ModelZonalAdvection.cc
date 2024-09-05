@@ -12,7 +12,7 @@
 #include "genericMarine/Model/ModelZonalAdvection.h"
 
 #include "oops/interface/ModelBase.h"
-
+#include "oops/util/FieldSetHelpers.h"
 namespace genericMarine {
 
 // -----------------------------------------------------------------------------
@@ -43,17 +43,18 @@ double interp(const double lat, const std::vector<double> & lats,
 
 ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
                                          const eckit::Configuration & conf)
-  : ModelAdvectionBase(geom, oops::validateAndDeserialize<ModelZonalAdvectionParameters>(conf))
+  : ModelAdvectionBase(geom, oops::validateAndDeserialize<ModelAdvectionBase::Parameters>(conf))
 {
-  ModelZonalAdvectionParameters params;
-  params.deserialize(conf);
+  ModelZonalAdvection::Parameters params  =
+    oops::validateAndDeserialize<ModelZonalAdvection::Parameters>(conf);
 
-  // make sure input parameters are correct
-  const double coast_dist = params.coastDist.value();
-  ASSERT(coast_dist >= 0.0);
-
-  const std::vector<double> & lats = params.speed.value().latitude.value();
-  const std::vector<double> & speed = params.speed.value().value.value();
+  // get advection parameters
+  ModelZonalAdvection::Parameters::Advection advec_param =
+    oops::validateAndDeserialize<ModelZonalAdvection::Parameters::Advection>(
+      params.advection.value().config.value());
+  const auto & speed_param = advec_param.speed.value();
+  const std::vector<double> & lats = speed_param.latitude.value();
+  const std::vector<double> & speed = speed_param.value.value();
   ASSERT(lats.size() == speed.size());
   ASSERT(lats.size() >= 1);
   for (size_t i = 1; i < lats.size(); i++) {
@@ -67,10 +68,19 @@ ModelZonalAdvection::ModelZonalAdvection(const Geometry & geom,
   auto lonlat = atlas::array::make_view<double, 2>(fspace.lonlat());
 
   // set a horizontally varying u
+  const auto & coast_damp_param = advec_param.coastDamp.value();
+  const double coast_dist = coast_damp_param.distance.value();
+  const double coast_damp = coast_damp_param.damping.value();
   for (atlas::idx_t idx = 0; idx < fspace.size(); idx++) {
     cx(idx) = interp(lonlat(idx, 1), lats, speed);
-    if (coast_dist > 0.0) cx(idx) *= std::min(coastdist(idx, 0) / coast_dist, 1.0);
+    if (coast_damp > 0.0 && coast_dist > 0.0) {
+      double  d = 1.0 - ((1.0-coastdist(idx, 0)/coast_dist) * coast_damp);
+      cx(idx) *= std::min(d, 1.0);
+    }
   }
+
+  // update the shear based diffusion
+  updateDiffusionParams();
 }
 
 // -----------------------------------------------------------------------------
