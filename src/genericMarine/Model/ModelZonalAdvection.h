@@ -12,9 +12,9 @@
 
 #include "genericMarine/Model/ModelAdvectionBase.h"
 
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/NumericConstraints.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
 
 namespace eckit {
   class Configuration;
@@ -44,8 +44,10 @@ class ModelZonalAdvection:public ModelAdvectionBase,
     class CoastalDamping:public oops::Parameters {
       OOPS_CONCRETE_PARAMETERS(CoastalDamping, oops::Parameters)
      public:
-      oops::Parameter<double> distance{"distance", 0.0, this};
-      oops::Parameter<double> damping{"amount", 1.0, this};
+      oops::Parameter<double> distance{"distance", 0.0, this,
+        {oops::minConstraint(0.0)}};
+      oops::Parameter<double> damping{"amount", 1.0, this,
+        {oops::minConstraint(0.0), oops::maxConstraint(1.0)}};
     };
     // ------------------------------------------------------------------------
     class Advection:public ModelAdvectionBase::Parameters::AdvectionBase {

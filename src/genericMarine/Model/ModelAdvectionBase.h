@@ -11,9 +11,10 @@
 
 #include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
-#include "oops/util/parameters/RequiredParameter.h"
-#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/ConfigurationParameter.h"
+#include "oops/util/parameters/NumericConstraints.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 // forward declarations
 namespace genericMarine {
@@ -51,7 +52,8 @@ namespace genericMarine {
         OOPS_ABSTRACT_PARAMETERS(AdvectionBase, oops::Parameters)
        public:
         oops::RequiredParameter<BoundaryCondition> boundary{"boundary condition", this};
-        oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this};
+        oops::Parameter<double> asselinFilter{"asselin filter", 0.2, this,
+          {oops::minConstraint(0.0), oops::maxConstraint(0.5)}};
       };
       class Advection:public AdvectionBase {
         OOPS_CONCRETE_PARAMETERS(Advection, AdvectionBase)
@@ -63,11 +65,12 @@ namespace genericMarine {
       class Diffusion:public oops::Parameters {
         OOPS_CONCRETE_PARAMETERS(Diffusion, oops::Parameters)
        public:
-        oops::Parameter<int> smootherIterations{"coefficient smoothing", 1, this};
-        oops::Parameter<double> kh{"Kh", 0.0, this};
-        oops::Parameter<double> ah{"Ah", 0.0, this};
-        oops::Parameter<double> kh_smag{"Kh_smag scale", 0.0, this};
-        oops::Parameter<double> kh_smag_max{"Kh_smag max", 0.0, this};
+        oops::Parameter<int> smootherIterations{"coefficient smoothing", 1, this,
+          {oops::minConstraint(0)}};
+        oops::Parameter<double> kh{"Kh", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> ah{"Ah", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> kh_smag{"Kh_smag scale", 0.0, this, {oops::minConstraint(0.0)}};
+        oops::Parameter<double> kh_smag_max{"Kh_smag max", 0.0, this, {oops::minConstraint(0.0)}};
       };
       // -----------------------------------------------------------------------------
       oops::OptionalParameter<std::string> name{"name", this};
