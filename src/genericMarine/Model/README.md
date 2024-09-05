@@ -32,8 +32,9 @@ model:
 ## Advection
 
 The horizontal advection equation:
-$$\frac{\partial \phi}{\partial t} = -u \frac{\partial \phi}{\partial x} - v\frac{\partial
-\phi}{\partial y}$$
+
+$$\frac{\partial \phi}{\partial t} = -u \frac{\partial \phi}{\partial x} - v\frac{\partial\phi}{\partial y}$$
+
 describes the rate of change of the scalar $\phi$ in terms of the velocity
 components $u$ and $v$. The underlying `ModelAdvectionBase` class is capable of
 full 2D advection, however, only zonal velocities are specified for this
@@ -41,17 +42,15 @@ full 2D advection, however, only zonal velocities are specified for this
 
 The equation has been discretized using a leapfrog time scheme and
 centered-in-space diferences:
-$$\frac{\phi^{n+1}_{i,j} - \phi^{n-1}_{i,j}}{2 \Delta t} =  - \frac{u}{2 \Delta x}(
-\phi^{n}_{i+1,j}-\phi^{n}_{i-1,j}) - \frac{v}{2 \Delta
-y}(\phi^{n}_{i,j+1}-\phi^{n}_{i,j-1})$$
+
+$$\frac{\phi^{n+1}_{i,j} - \phi^{n-1}_{i,j}}{2 \Delta t} =  - \frac{u}{2 \Delta x}(\phi^{n}_{i+1,j}-\phi^{n}_{i-1,j}) - \frac{v}{2 \Delta y}(\phi^{n}_{i,j+1}-\phi^{n}_{i,j-1})$$
 
 This leapfrog scheme is prone to oscillations, also known as the "computational
 mode." To prevent this, an Asselin filter is used. After calculating the
 advection tendencies, the current timestep is smoothed with the previous and
 next timesteps to remove spurious oscillations. The smoothing operation is:
 
-$$\phi^{n} \rightarrow \phi^{n} + \epsilon ( \phi^{n+1} - 2\phi^{n} + \phi^{n-1}
-) $$
+$$\phi^{n} \rightarrow \phi^{n} + \epsilon ( \phi^{n+1} - 2\phi^{n} + \phi^{n-1}) $$
 
 where $\epsilon$ is the Asselin filter parameter, controlling the amount of
 smoothing applied.
@@ -86,15 +85,14 @@ orders of the Laplacian operator.
 
 ### 1. Harmonic Diffusion
 The harmonic diffusion equation is given by:
+
 $$\frac{\partial \phi}{\partial t} = K_h \nabla^2\phi $$
 
 This equation describes second-order diffusion, where $K_h$ is the diffusion
 coefficient and $\nabla^2\phi$ is the Laplacian of the scalar field. The
 equation is discretized as:
 
-$$\frac{\phi^{n+1} -\phi^{n-1}}{2 \Delta t} = K_h (\frac{\phi^{n-1}_{i+1,j} -
-2\phi^{n-1}_{i,j}+\phi^{n-1}_{i-1,j}}{\Delta x^2} + \frac{\phi^{n-1}_{i,j+1} -
-2\phi^{n-1}_{i,j}+\phi^{n-1}_{i,j-1}}{\Delta y^2})$$
+$$\frac{\phi^{n+1} -\phi^{n-1}}{2 \Delta t} = K_h (\frac{\phi^{n-1}_{i+1,j} -2\phi^{n-1}_{i,j}+\phi^{n-1}_{i-1,j}}{\Delta x^2} + \frac{\phi^{n-1}_{i,j+1} - 2\phi^{n-1}_{i,j}+\phi^{n-1}_{i,j-1}}{\Delta y^2})$$
 
 To be compatible with the leapfrog time scheme of the advection, note that the
 previous timestep is used for calculating the spatial derivatives for diffusion
@@ -108,10 +106,13 @@ Note, the basic harmonic diffusion is usually overly diffusive, you'll probably
 want to use some combination of the other two types of diffusion.
 
 ### 2. Smagorinsky Diffusion
-Smagorinsky diffusion is a nonlinear form of harmonic diffusion where the diffusion coefficient $K_{h\_smag}$ depends on the local flow's strain rate:
+Smagorinsky diffusion is a nonlinear form of harmonic diffusion where the
+diffusion coefficient $K_{h\_smag}$ depends on the local flow's strain rate:
+
 $$ K_{h\_smag} = l_s^2 \sqrt{T^2 + S^2} $$
 
-$$T = \frac{\partial u}{\partial x} - \frac{\partial v}{\partial y}$$
+$$ T = \frac{\partial u}{\partial x} - \frac{\partial v}{\partial y}$$
+
 $$ S = \frac{\partial u}{\partial y} + \frac{\partial v}{\partial x}$$
 
 Where $T$ is the horizontal tension strain and $S$ is the horizontal shearing
