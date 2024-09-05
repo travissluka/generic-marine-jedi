@@ -33,7 +33,9 @@ model:
 
 The horizontal advection equation:
 
-$$\frac{\partial \phi}{\partial t} = -u \frac{\partial \phi}{\partial x} - v\frac{\partial\phi}{\partial y}$$
+```math
+\frac{\partial \phi}{\partial t} = -u \frac{\partial \phi}{\partial x} - v\frac{\partial\phi}{\partial y}
+```
 
 describes the rate of change of the scalar $\phi$ in terms of the velocity
 components $u$ and $v$. The underlying `ModelAdvectionBase` class is capable of
@@ -43,14 +45,18 @@ full 2D advection, however, only zonal velocities are specified for this
 The equation has been discretized using a leapfrog time scheme and
 centered-in-space diferences:
 
-$$\frac{\phi^{n+1}_{i,j} - \phi^{n-1}_{i,j}}{2 \Delta t} =  - \frac{u}{2 \Delta x}(\phi^{n}_{i+1,j}-\phi^{n}_{i-1,j}) - \frac{v}{2 \Delta y}(\phi^{n}_{i,j+1}-\phi^{n}_{i,j-1})$$
+```math
+\frac{\phi^{n+1}_{i,j} - \phi^{n-1}_{i,j}}{2 \Delta t} =  - \frac{u}{2 \Delta x}(\phi^{n}_{i+1,j}-\phi^{n}_{i-1,j}) - \frac{v}{2 \Delta y}(\phi^{n}_{i,j+1}-\phi^{n}_{i,j-1})
+```
 
 This leapfrog scheme is prone to oscillations, also known as the "computational
 mode." To prevent this, an Asselin filter is used. After calculating the
 advection tendencies, the current timestep is smoothed with the previous and
 next timesteps to remove spurious oscillations. The smoothing operation is:
 
-$$\phi^{n} \rightarrow \phi^{n} + \epsilon ( \phi^{n+1} - 2\phi^{n} + \phi^{n-1}) $$
+```math
+\phi^{n} \rightarrow \phi^{n} + \epsilon ( \phi^{n+1} - 2\phi^{n} + \phi^{n-1})
+```
 
 where $\epsilon$ is the Asselin filter parameter, controlling the amount of
 smoothing applied.
@@ -86,13 +92,17 @@ orders of the Laplacian operator.
 ### 1. Harmonic Diffusion
 The harmonic diffusion equation is given by:
 
-$$\frac{\partial \phi}{\partial t} = K_h \nabla^2\phi $$
+```math
+\frac{\partial \phi}{\partial t} = K_h \nabla^2\phi
+```
 
 This equation describes second-order diffusion, where $K_h$ is the diffusion
 coefficient and $\nabla^2\phi$ is the Laplacian of the scalar field. The
 equation is discretized as:
 
-$$\frac{\phi^{n+1} -\phi^{n-1}}{2 \Delta t} = K_h (\frac{\phi^{n-1}_{i+1,j} -2\phi^{n-1}_{i,j}+\phi^{n-1}_{i-1,j}}{\Delta x^2} + \frac{\phi^{n-1}_{i,j+1} - 2\phi^{n-1}_{i,j}+\phi^{n-1}_{i,j-1}}{\Delta y^2})$$
+```math
+\frac{\phi^{n+1} -\phi^{n-1}}{2 \Delta t} = K_h (\frac{\phi^{n-1}_{i+1,j} -2\phi^{n-1}_{i,j}+\phi^{n-1}_{i-1,j}}{\Delta x^2} + \frac{\phi^{n-1}_{i,j+1} - 2\phi^{n-1}_{i,j}+\phi^{n-1}_{i,j-1}}{\Delta y^2})
+```
 
 To be compatible with the leapfrog time scheme of the advection, note that the
 previous timestep is used for calculating the spatial derivatives for diffusion
@@ -100,7 +110,9 @@ previous timestep is used for calculating the spatial derivatives for diffusion
 To ensure numerical stability, the diffusion coefficient $K_h$ is automatically
 adjusted to respect the CFL (Courant–Friedrichs–Lewy) condition:
 
-$$ K_h \le 0.5 \frac{\Delta x ^2}{\Delta y}$$
+```math
+K_h \le 0.5 \frac{\Delta x ^2}{\Delta y}
+```
 
 Note, the basic harmonic diffusion is usually overly diffusive, you'll probably
 want to use some combination of the other two types of diffusion.
@@ -109,11 +121,17 @@ want to use some combination of the other two types of diffusion.
 Smagorinsky diffusion is a nonlinear form of harmonic diffusion where the
 diffusion coefficient $K_{h\_smag}$ depends on the local flow's strain rate:
 
-$$ K_{h\_smag} = l_s^2 \sqrt{T^2 + S^2} $$
+```math
+K_{h\_smag} = l_s^2 \sqrt{T^2 + S^2}
+```
 
-$$ T = \frac{\partial u}{\partial x} - \frac{\partial v}{\partial y}$$
+```math
+T = \frac{\partial u}{\partial x} - \frac{\partial v}{\partial y}
+```
 
-$$ S = \frac{\partial u}{\partial y} + \frac{\partial v}{\partial x}$$
+```math
+S = \frac{\partial u}{\partial y} + \frac{\partial v}{\partial x}
+```
 
 Where $T$ is the horizontal tension strain and $S$ is the horizontal shearing
 strain. The length scale $l_s$ controls the strength of the Smagorinsky
@@ -127,7 +145,9 @@ The resulting Smagorinsky diffusion parameter $K_{h\_smag}$ is added to the base
 ### 3. Biharmonic Diffusion
 Biharmonic diffusion is a higher-order diffusion process:
 
-$$ \frac{\partial \phi} {\partial t} = A_h\nabla^4 \phi$$
+```math
+\frac{\partial \phi} {\partial t} = A_h\nabla^4 \phi
+```
 
 Where $A_h$ is the biharmonic diffusion coefficient, and $\nabla^4\phi$ is the
 fourth-order Laplacian operator (Laplacian of the Laplacian). This diffusion
@@ -137,7 +157,9 @@ diffusion while preserving larger-scale features.
 Similar to harmonic diffusion, the biharmonic coefficient $A_h$ is constrained
 by the CFL condition for numerical stability:
 
-$$ A_h \le \frac{1}{16} \frac{\Delta x ^ 4} {\Delta t}$$
+```math
+A_h \le \frac{1}{16} \frac{\Delta x ^ 4} {\Delta t}
+```
 
 ### Parameters
 
