@@ -202,3 +202,7 @@ genericmarine_add_test( NAME 3dvar
 genericmarine_add_test( NAME 3dfgat
                         EXE  genericmarine_var.x
                         TEST_DEPENDS test_genericmarine_errorcovariance_training )
+
+genericmarine_add_test( NAME addincrement
+                        EXE  genericmarine_addincrement.x
+                        TEST_DEPENDS test_genericmarine_3dvar )
