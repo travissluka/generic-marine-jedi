@@ -1,3 +1,7 @@
+ecbuild_add_executable( TARGET  genericmarine_addincrement.x
+                        SOURCES AddIncrement.cc
+                        LIBS    genericmarine)
+
 ecbuild_add_executable( TARGET  genericmarine_error_covariance_toolbox.x
                         SOURCES ErrorCovarianceToolbox.cc
                         LIBS    genericmarine)

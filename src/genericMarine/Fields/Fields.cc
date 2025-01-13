@@ -222,10 +222,9 @@ void Fields::read(const eckit::Configuration & conf) {
     }
   }
 
-  // get list of variables, and process each one
-  std::vector<std::string> varNames;
-  conf.get("state variables", varNames);
-  for (std::string varName : varNames) {
+  // process each variable
+  for (int i = 0; i < vars_.size(); i++) {
+    std::string varName = vars_[i];
     oops::Log::info() << "Reading variable: " << varName << std::endl;
 
     // get data on root PE
