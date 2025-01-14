@@ -43,6 +43,12 @@ State::State(const Geometry & geom, const State & other)
 
 // ----------------------------------------------------------------------------
 
+State::State(const oops::Variables & vars, const State & other) : State(other) {
+  // variable changes go here... but we dont have any
+}
+
+// ----------------------------------------------------------------------------
+
 State::State(const State & other)
   : Fields(other) {}
 

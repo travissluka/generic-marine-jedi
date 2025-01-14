@@ -55,7 +55,7 @@ class SetCorScales : public oops::Application {
     // create the atlas field
     atlas::FieldSet param_fieldSet;
     atlas::Field param_field = geom.functionSpace().createField<double>(
-      atlas::option::levels(1) | atlas::option::name(vars[0]));
+      atlas::option::levels(1) | atlas::option::name(vars[0].name()));
     param_fieldSet.add(param_field);
     auto param_view = atlas::array::make_view<double, 2>(param_field);
 

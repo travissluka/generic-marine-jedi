@@ -44,6 +44,7 @@ namespace genericMarine {
     State(const Geometry &, const oops::Variables &,
           const util::DateTime &);
     State(const Geometry &, const State &);
+    State(const oops::Variables &, const State &);
     State(const State &);
     virtual ~State();
 

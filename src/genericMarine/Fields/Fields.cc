@@ -56,17 +56,18 @@ Fields::Fields(const Fields & other)
 void Fields::updateFields(const oops::Variables & vars) {
   atlas::FieldSet fset;
   for (int v = 0; v < vars.size(); v++) {
-    if (atlasFieldSet_.has(vars[v])) {
+    std::string name = vars[v].name();
+    if (atlasFieldSet_.has(name)) {
       // Don't know why this is needed, I have a weird bug somewhere
-      atlasFieldSet_.field(vars[v]).rename(vars[v]);
+      atlasFieldSet_.field(name).rename(name);
 
       // field already exists, copy over
-      fset.add(atlasFieldSet_.field(vars[v]));
+      fset.add(atlasFieldSet_.field(name));
     } else {
       // field does not exist, create
       atlas::Field fld = geom_.functionSpace().createField<double>(
                           atlas::option::levels(1) |
-                          atlas::option::name(vars[v]));
+                          atlas::option::name(name));
       auto fd = make_view<double, 2>(fld);
       fd.assign(0.0);
       fset.add(fld);
@@ -85,7 +86,7 @@ Fields & Fields::operator =(const Fields & other) {
 
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
+    std::string name = vars_[v].name();
     ASSERT(atlasFieldSet_.has(name));
     ASSERT(other.atlasFieldSet_.has(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
@@ -102,7 +103,7 @@ Fields & Fields::operator =(const Fields & other) {
 Fields & Fields::operator+=(const Fields &other) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
+    std::string name = vars_[v].name();
     ASSERT(other.atlasFieldSet_.has(name));
     auto fd       = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_other = make_view<double, 2>(other.atlasFieldSet_.field(name));
@@ -123,7 +124,7 @@ void Fields::accumul(const double &zz, const Fields &rhs) {
   const size_t size = geom_.functionSpace().size();
 
   for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
+    std::string name = vars_[v].name();
     ASSERT(rhs.atlasFieldSet_.has(name));
     auto fd = make_view<double, 2>(atlasFieldSet_.field(name));
     auto fd_rhs = make_view<double, 2>(rhs.atlasFieldSet_.field(name));
@@ -224,7 +225,7 @@ void Fields::read(const eckit::Configuration & conf) {
 
   // process each variable
   for (int i = 0; i < vars_.size(); i++) {
-    std::string varName = vars_[i];
+    std::string varName = vars_[i].name();
     oops::Log::info() << "Reading variable: " << varName << std::endl;
 
     // get data on root PE
@@ -318,7 +319,7 @@ void Fields::write(const eckit::Configuration & conf) const {
 
   // for each variable
   for (int s = 0; s < vars_.size(); s++) {
-    const std::string varName = vars_[s];
+    const std::string varName = vars_[s].name();
     const float fillvalue = -32768.0;
 
     // gather the data to root PE
@@ -362,7 +363,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 
   // copy each field
   for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
+    std::string name = vars_[v].name();
     ASSERT(atlasFieldSet_.has(name));
 
     atlas::Field fld = geom_.functionSpace().createField<double>(
@@ -396,7 +397,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   const int size = geom_.functionSpace().size();
   for (int v = 0; v < vars_.size(); v++) {
-    std::string name = vars_[v];
+    std::string name = vars_[v].name();
     ASSERT(fset.has(name));
 
     atlas::Field fld_dst = atlasFieldSet_.field(name);

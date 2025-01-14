@@ -26,7 +26,7 @@ void VariableChange::changeVar(State & xx, const oops::Variables & vars) const {
   State xx2(xx.geometry(), vars, xx.time());
 
   for ( int v = 0; v < vars.size(); v++ ) {
-    std::string name = vars[v];
+    std::string name = vars[v].name();
     const int size = geom_.functionSpace().size();
 
     auto dst = atlas::array::make_view<double, 2>(xx2.fieldSet().field(name));
