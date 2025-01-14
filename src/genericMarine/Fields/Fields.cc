@@ -377,7 +377,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
     fld.metadata().set("interp_type", "default");
     if (name == "sea_area_fraction") {
     } else {
-      fld.metadata().set("interp_source_point_mask", "mask");
+      fld.metadata().set("mask", "mask");
     }
 
     // TODO(travis) can I avoid the copy and just add the field to the other fset?

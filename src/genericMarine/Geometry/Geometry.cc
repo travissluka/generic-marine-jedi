@@ -45,13 +45,9 @@ Geometry::Geometry(const eckit::Configuration & conf, const eckit::mpi::Comm & c
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
   // create grid from configuration
-  // NOTE: we have to use "checkerboard" instead of the default so that the
-  // poles aren't placed completely on a single PE, which breaks the interpolation
-  // at the moment due to a bug with redundant points.
   atlas::util::Config gridConfig(conf.getSubConfiguration("grid"));
   atlas::RegularLonLatGrid atlasRllGrid(gridConfig);
   functionSpace_ = atlas::functionspace::StructuredColumns(atlasRllGrid,
-                      atlas::grid::Partitioner("checkerboard"),
                       atlas::option::halo(GEOM_HALO_SIZE) );
   atlas::functionspace::StructuredColumns fs(functionSpace_);
   auto vGhost = atlas::array::make_view<int, 1>(fs.ghost());
