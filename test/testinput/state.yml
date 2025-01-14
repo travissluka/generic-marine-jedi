@@ -16,6 +16,8 @@ state test:
     filename: data_static/sst_1p0.nc
     state variables: [seaSurfaceTemperature]
 
+  construct to variables: [seaSurfaceTemperature]
+
 test:
   reference filename: testref/state.ref
   test output filename: testoutput/state.ref
