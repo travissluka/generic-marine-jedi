@@ -187,21 +187,29 @@ genericmarine_add_test( NAME hofx4d
 genericmarine_add_test( NAME setcorscales
                         EXE genericmarine_setcorscales.x )
 
-genericmarine_add_test( NAME errorcovariance_training
+genericmarine_add_test( NAME parameters_bump
                         EXE genericmarine_error_covariance_toolbox.x
                         TEST_DEPENDS test_genericmarine_setcorscales )
 
-genericmarine_add_test( NAME dirac
+genericmarine_add_test( NAME parameters_diffusion
+                        EXE genericmarine_error_covariance_toolbox.x
+                        TEST_DEPENDS test_genericmarine_setcorscales )
+
+genericmarine_add_test( NAME dirac_bump
                         EXE  genericmarine_error_covariance_toolbox.x
-                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
+                        TEST_DEPENDS test_genericmarine_parameters_bump )
+
+genericmarine_add_test( NAME dirac_diffusion
+                        EXE  genericmarine_error_covariance_toolbox.x
+                        TEST_DEPENDS test_genericmarine_parameters_diffusion )
 
 genericmarine_add_test( NAME 3dvar
                         EXE  genericmarine_var.x
-                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
+                        TEST_DEPENDS test_genericmarine_parameters_bump )
 
 genericmarine_add_test( NAME 3dfgat
                         EXE  genericmarine_var.x
-                        TEST_DEPENDS test_genericmarine_errorcovariance_training )
+                        TEST_DEPENDS test_genericmarine_parameters_bump )
 
 genericmarine_add_test( NAME addincrement
                         EXE  genericmarine_addincrement.x

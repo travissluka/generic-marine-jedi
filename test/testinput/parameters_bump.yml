@@ -50,5 +50,5 @@ background error:
           state variables: [seaSurfaceTemperature]
 
 test:
-  reference filename: testref/errorcovariance_training.ref
-  test output filename: testoutput/errorcovariance_training.ref
+  reference filename: testref/parameters_bump.ref
+  test output filename: testoutput/parameters_bump.ref

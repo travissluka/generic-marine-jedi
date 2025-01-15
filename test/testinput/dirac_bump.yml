@@ -18,7 +18,7 @@ background error:
     saber block name: BUMP_NICAS
     read:
       io:
-        data directory: data_generated/errorcovariance_training
+        data directory: data_generated/parameters_bump
       drivers:
         multivariate strategy: univariate
         read local nicas: true
@@ -41,8 +41,8 @@ background:
   state variables: [seaSurfaceTemperature]
 
 output dirac:
-  filename: data_output/dirac.inc.nc
+  filename: data_output/dirac_bump.inc.nc
 
 test:
-  reference filename: testref/dirac.ref
-  test output filename: testoutput/dirac.ref
+  reference filename: testref/dirac_bump.ref
+  test output filename: testoutput/dirac_bump.ref

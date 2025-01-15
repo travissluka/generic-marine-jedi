@@ -1,0 +1,39 @@
+# notes on filenames:
+# - data_static and data_generated are test inputs
+# - data_output is test output
+
+geometry:
+  grid:
+    name: S360x180
+    domain:
+      type: global
+      west: -180
+  landmask:
+    filename: data_static/landmask_1p0.nc
+
+background:
+  date: &date 2018-04-15T12:00:00Z
+  filename: data_static/sst_1p0.nc
+  state variables: [seaSurfaceTemperature]
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    calibration:
+      normalization:
+        iterations: 100
+      groups:
+      - horizontal:
+          model file:
+            date: *date
+            filename: data_generated/setcorscales/rh.nc
+            state variables: [seaSurfaceTemperature]
+          mask: "mask"
+          model variable: [seaSurfaceTemperature]
+        write:
+          filepath: data_output/diffusion.nc
+
+test:
+  reference filename: testref/parameters_diffusion.ref
+  test output filename: testoutput/parameters_diffusion.ref
